@@ -1,0 +1,42 @@
+# =============================================================================
+# RAG (Retrieval Augmented Generation) Configuration
+# =============================================================================
+# Settings for document processing, embeddings, vector stores, and retrieval.
+
+# Chunking settings
+chunking:
+  strategy: "recursive"        # Options: fixed, recursive, semantic
+  chunk_size: 512              # Characters per chunk
+  overlap: 50                  # Character overlap between chunks
+  separators:                  # For recursive chunking (tried in order)
+    - "\n\n"                   # Paragraph breaks (preferred)
+    - "\n"                     # Line breaks
+    - ". "                     # Sentences
+    - " "                      # Words (last resort)
+
+# Embedding model
+embeddings:
+  model: "all-MiniLM-L6-v2"   # Fast, small (80MB), good quality
+  # Other options:
+  #   - "all-mpnet-base-v2"           (420MB, better quality)
+  #   - "BAAI/bge-small-en-v1.5"      (130MB, very good quality)
+  #   - "nomic-ai/nomic-embed-text-v1.5"  (requires Ollama)
+  device: "cpu"                # Use "cuda" if GPU available
+
+# Vector store
+vector_store:
+  backend: "chroma"            # Options: chroma, faiss
+  collection_name: "agentexplorr_docs"
+  persist_directory: "chroma_data"
+
+# Retrieval
+retrieval:
+  top_k: 5                    # Number of documents to retrieve
+  score_threshold: 0.3         # Minimum similarity score (0-1)
+  rerank: true                 # Re-rank results by relevance
+
+# Generation (LLM for answer synthesis)
+generation:
+  model: "llama3.2"            # Ollama model for answer generation
+  temperature: 0.3             # Lower temp for factual answers
+  max_tokens: 1024

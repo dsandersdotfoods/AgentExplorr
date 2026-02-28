@@ -1,0 +1,231 @@
+# ============================================================================
+# LoRA Configuration for LLM Fine-Tuning
+# ============================================================================
+#
+# This file configures the LoRA (Low-Rank Adaptation) hyperparameters.
+# Load it with:
+#   tuner = LoRAFineTuner.from_yaml("configs/lora_config.yaml")
+#
+# WHAT TO TUNE FIRST (in order of impact):
+#   1. learning_rate     — Most impactful. Start with 2e-4.
+#   2. num_train_epochs  — 3 is a good default. Watch val loss.
+#   3. lora_r            — 16 works for most tasks. Try 8 or 32.
+#   4. batch size        — As large as your GPU allows (see below).
+#
+# LEARNING RESOURCES:
+#   - Sebastian Raschka's "Practical Tips for Finetuning LLMs":
+#     https://magazine.sebastianraschka.com/p/practical-tips-for-finetuning-llms
+#   - Hugging Face PEFT docs: https://huggingface.co/docs/peft
+#   - VIDEO: "How to Pick LoRA Hyperparameters" (Trelis Research):
+#     https://www.youtube.com/watch?v=XpoKB3usmKc
+# ============================================================================
+
+
+# ── Model ────────────────────────────────────────────────────────────────────
+# The base model to fine-tune. TinyLlama is recommended for LEARNING because
+# it's small (1.1B params, ~4.5 GB in FP32) and trains fast.
+#
+# Other good options:
+#   - "microsoft/phi-2"                       (2.7B, great for its size)
+#   - "mistralai/Mistral-7B-v0.1"             (7B, production quality)
+#   - "meta-llama/Llama-2-7b-hf"              (7B, needs HF access token)
+#   - "NousResearch/Llama-2-7b-hf"            (7B, community upload, no token needed)
+base_model_name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+
+
+# ── LoRA Hyperparameters ────────────────────────────────────────────────────
+
+# RANK (r): The most important LoRA parameter.
+#
+# Controls the size of the low-rank matrices A (d x r) and B (r x d).
+# Higher rank = more trainable parameters = more capacity to learn.
+#
+# Think of rank like the number of "features" the adapter can learn:
+#   r=8:   ~2.1M trainable params → Good for simple tasks (classification)
+#   r=16:  ~4.2M trainable params → Good default for instruction following
+#   r=32:  ~8.4M trainable params → Better for complex/diverse tasks
+#   r=64:  ~16.8M trainable params → Approaches full fine-tuning quality
+#
+# RECOMMENDATION: Start with 16. If underfitting, try 32 or 64.
+#                 If overfitting, try 8 or increase dropout.
+lora_r: 16
+
+# ALPHA: Scaling factor for the LoRA update.
+#
+# The LoRA output is scaled by (alpha / r) before being added to the
+# original layer output. This controls how STRONGLY the adapter affects
+# the model's behavior.
+#
+# Common strategies:
+#   alpha = 2*r → Scaling factor = 2.0 (our default, slightly aggressive)
+#   alpha = r   → Scaling factor = 1.0 (conservative, very stable)
+#   alpha = 1   → Scaling factor = 1/r (very subtle adaptation)
+#
+# If training is unstable (loss spikes), REDUCE alpha.
+# If the model isn't learning, INCREASE alpha.
+lora_alpha: 32
+
+# DROPOUT: Regularization for LoRA layers.
+#
+# Randomly zeros out a fraction of LoRA activations during training.
+# This prevents overfitting by ensuring the adapter doesn't rely on
+# any single neuron too much.
+#
+#   0.0:  No dropout (fine for datasets > 10K examples)
+#   0.05: Light dropout (good default)
+#   0.1:  Moderate (for datasets < 5K examples)
+#   0.2:  Heavy (only if severely overfitting)
+lora_dropout: 0.05
+
+# TARGET MODULES: Which layers in the transformer to apply LoRA to.
+#
+# Each transformer layer has these linear layers:
+#
+#   Self-Attention:
+#     q_proj → Query projection  (what am I looking for?)
+#     k_proj → Key projection    (what do I contain?)
+#     v_proj → Value projection   (what information do I carry?)
+#     o_proj → Output projection  (combine attended information)
+#
+#   Feed-Forward / MLP:
+#     gate_proj → Gating mechanism (Llama/Mistral architecture)
+#     up_proj   → Project to intermediate dimension
+#     down_proj → Project back to model dimension
+#
+# Original LoRA paper: Only q_proj and v_proj (minimalist approach)
+# QLoRA paper finding: ALL layers gives better results (our default)
+#
+# MORE modules = more parameters = better quality but more memory.
+# If memory is tight, start with just: [q_proj, v_proj]
+target_modules:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+
+# ── Training Hyperparameters ────────────────────────────────────────────────
+
+# EPOCHS: Number of full passes through the training data.
+#
+# Each epoch, the model sees every training example once.
+# More epochs = more learning, but risk of overfitting.
+#
+# WATCH YOUR VALIDATION LOSS:
+#   - Val loss still decreasing → train more epochs
+#   - Val loss plateaued → you're done, stop training
+#   - Val loss increasing → you're overfitting, use fewer epochs
+#
+# Typical values: 1-5. Start with 3.
+num_train_epochs: 3
+
+# BATCH SIZE: Number of examples per GPU per training step.
+#
+# Directly affects GPU memory usage. If you get CUDA OOM:
+#   1. Reduce this to 2 or 1
+#   2. Increase gradient_accumulation_steps to compensate
+#
+# VRAM requirements (approximate, for TinyLlama with seq_len=512):
+#   batch_size=1:  ~5 GB VRAM
+#   batch_size=4:  ~7 GB VRAM
+#   batch_size=8:  ~10 GB VRAM
+#   batch_size=16: ~15 GB VRAM
+per_device_train_batch_size: 4
+
+# GRADIENT ACCUMULATION: Simulates a larger batch size without more memory.
+#
+# Effective batch size = per_device_train_batch_size * gradient_accumulation_steps
+# With our defaults: 4 * 4 = 16
+#
+# How it works:
+#   Step 1: Forward+backward on batch 1, store gradients
+#   Step 2: Forward+backward on batch 2, ACCUMULATE gradients
+#   Step 3: Forward+backward on batch 3, ACCUMULATE gradients
+#   Step 4: Forward+backward on batch 4, ACCUMULATE gradients → UPDATE weights
+#
+# Larger effective batch = smoother gradients = more stable training.
+gradient_accumulation_steps: 4
+
+# LEARNING RATE: How big each weight update step is.
+#
+# THIS IS THE MOST IMPORTANT HYPERPARAMETER.
+#
+# Learning rate schedule (what actually happens):
+#   1. Warmup: LR linearly increases from 0 to this value (first 3% of steps)
+#   2. Cosine decay: LR gradually decreases following a cosine curve
+#   3. End: LR approaches 0 at the end of training
+#
+# If training is unstable → DECREASE learning rate (try 1e-4)
+# If training is too slow → INCREASE learning rate (try 3e-4)
+#
+# Typical range for LoRA: 1e-4 to 3e-4
+# Full fine-tuning uses much lower: 1e-5 to 5e-5
+learning_rate: 2.0e-4
+
+# WARMUP: Fraction of training steps where LR increases from 0.
+#
+# Why warmup? At the start of training, the LoRA weights are randomly
+# initialized. Large learning rate + random weights = chaotic updates.
+# Warmup gradually increases the LR, giving the model time to adjust.
+#
+# 0.03 = 3% of training steps devoted to warmup (good default)
+warmup_ratio: 0.03
+
+# MAX SEQUENCE LENGTH: Maximum number of tokens per training example.
+#
+# Must match the value used during data preparation!
+#
+# Memory scales QUADRATICALLY with sequence length (because of self-attention).
+# Doubling this roughly quadruples memory usage:
+#   512 tokens:  ~7 GB (good for short Q&A, classification)
+#   1024 tokens: ~12 GB (good for instruction following)
+#   2048 tokens: ~22 GB (good for longer generation)
+max_seq_length: 512
+
+# WEIGHT DECAY: L2 regularization to prevent overfitting.
+#
+# Adds a penalty proportional to the magnitude of weights.
+# Keeps weights small, which acts as a form of regularization.
+#
+# 0.0:  No regularization
+# 0.01: Light (good default)
+# 0.1:  Strong (if overfitting is severe)
+weight_decay: 0.01
+
+# ── Output & Logging ────────────────────────────────────────────────────────
+
+# Where to save checkpoints and the final adapter.
+output_dir: "./outputs/lora_finetuned"
+
+# Log training metrics (loss, LR, etc.) every N steps.
+# Lower = more granular logs but slightly slower training.
+logging_steps: 10
+
+# When to save checkpoints:
+#   "epoch" — Save after each epoch (recommended)
+#   "steps" — Save every N steps (set save_steps too)
+#   "no"    — Don't save checkpoints (only final model)
+save_strategy: "epoch"
+
+# ── Precision ───────────────────────────────────────────────────────────────
+# Enable ONE of these (or neither for FP32 on CPU):
+#
+# BF16 (recommended if available):
+#   - Same exponent range as FP32 (more stable than FP16)
+#   - Requires Ampere+ GPU (RTX 3000+, A100, L4)
+#   - Check: python -c "import torch; print(torch.cuda.is_bf16_supported())"
+#
+# FP16 (fallback):
+#   - Supported on all CUDA GPUs
+#   - Can have numerical issues (NaN loss) — uses loss scaling to mitigate
+fp16: false
+bf16: false
+# TIP: The code auto-detects your GPU and enables the best option.
+#      You usually don't need to set these manually.
+
+# Random seed for reproducibility. Same seed + same data + same config
+# = same results (modulo GPU non-determinism in some CUDA operations).
+seed: 42

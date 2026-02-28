@@ -1,0 +1,69 @@
+# =============================================================================
+# Docker Compose — Run AgentExplorr + supporting services
+# =============================================================================
+# Usage:
+#   docker compose -f docker/docker-compose.yml up -d
+#
+# Services:
+#   - app:     AgentExplorr application
+#   - mlflow:  MLflow tracking server (experiment tracking UI)
+#   - chroma:  ChromaDB server (vector store for RAG)
+#
+# LEARNING RESOURCE:
+#   - Docker Compose docs: https://docs.docker.com/compose/
+#   - VIDEO: "Docker Compose Tutorial" — https://www.youtube.com/watch?v=HG6yIjZapSA
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # AgentExplorr — main application
+  # ---------------------------------------------------------------------------
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: agentexplorr
+    env_file: ../.env
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    volumes:
+      - ../src:/app/src          # Live code reload
+      - ../notebooks:/app/notebooks
+      - ../configs:/app/configs
+    ports:
+      - "8888:8888"              # JupyterLab
+    depends_on:
+      - mlflow
+      - chroma
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  # ---------------------------------------------------------------------------
+  # MLflow — experiment tracking & model registry
+  # ---------------------------------------------------------------------------
+  # Open the UI at http://localhost:5000
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.17.0
+    container_name: agentexplorr-mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+
+  # ---------------------------------------------------------------------------
+  # ChromaDB — vector database for RAG
+  # ---------------------------------------------------------------------------
+  # API available at http://localhost:8000
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: agentexplorr-chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+
+volumes:
+  mlflow-data:
+  chroma-data:

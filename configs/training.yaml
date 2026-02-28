@@ -1,0 +1,62 @@
+# =============================================================================
+# LLM Training Configuration
+# =============================================================================
+# Hyperparameters for fine-tuning with LoRA/QLoRA.
+#
+# LEARNING: Each parameter is documented with its purpose and typical range.
+# VIDEO: "Hyperparameter Tuning" — https://www.youtube.com/watch?v=ttE0F7fghfk
+
+# Base model to fine-tune
+model:
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"   # Small model for learning
+  # Other options:
+  #   - "microsoft/phi-2"              (2.7B params)
+  #   - "mistralai/Mistral-7B-v0.1"   (7B params, needs more VRAM)
+
+# Dataset configuration
+dataset:
+  name: "tatsu-lab/alpaca"          # 52K instruction-following examples
+  split: "train"
+  max_samples: 1000                  # Limit for faster training during dev
+  test_size: 0.1                     # 10% held out for evaluation
+  max_seq_length: 512                # Maximum token sequence length
+
+# LoRA hyperparameters
+# LEARNING: LoRA paper — https://arxiv.org/abs/2106.09685
+lora:
+  r: 16                    # Rank of the low-rank matrices (4-64)
+                           # Higher r = more parameters = more capacity but slower
+  lora_alpha: 32           # Scaling factor = alpha / r
+                           # Rule of thumb: alpha = 2 * r
+  lora_dropout: 0.05       # Dropout for regularization (0.0-0.1)
+  target_modules:          # Which layers to apply LoRA to
+    - q_proj               # Query projection in attention
+    - v_proj               # Value projection in attention
+    # Optional: add more for more capacity
+    # - k_proj
+    # - o_proj
+    # - gate_proj
+    # - up_proj
+    # - down_proj
+
+# Training hyperparameters
+training:
+  num_epochs: 3                    # Number of passes through the dataset
+  per_device_batch_size: 4         # Samples per GPU per step
+  gradient_accumulation_steps: 4   # Effective batch size = 4 * 4 = 16
+  learning_rate: 0.0002            # Peak learning rate (2e-4 is common for LoRA)
+  weight_decay: 0.01               # L2 regularization strength
+  warmup_ratio: 0.03               # % of steps for LR warmup (3%)
+  lr_scheduler_type: "cosine"      # Cosine annealing (smooth decay)
+  fp16: true                       # Use 16-bit training (faster, less memory)
+  logging_steps: 10                # Log metrics every N steps
+  save_steps: 100                  # Save checkpoint every N steps
+  output_dir: "outputs/lora"       # Where to save checkpoints
+
+# QLoRA-specific settings (4-bit quantization)
+# LEARNING: QLoRA paper — https://arxiv.org/abs/2305.14314
+qlora:
+  load_in_4bit: true               # Enable 4-bit quantization
+  bnb_4bit_quant_type: "nf4"       # NormalFloat4 — optimal for normally distributed weights
+  bnb_4bit_use_double_quant: true  # Quantize the quantization constants too (saves ~0.4GB)
+  bnb_4bit_compute_dtype: "float16" # Compute dtype for 4-bit operations

@@ -1,0 +1,35 @@
+# =============================================================================
+# Agent Configuration
+# =============================================================================
+# Configure AI agents, their tools, and behavior.
+#
+# LEARNING: YAML is the standard for ML configs because it supports comments
+# and is more readable than JSON for human-edited configuration.
+
+# Default LLM settings for agents
+llm:
+  provider: ollama          # We use Ollama for fully open source LLM inference
+  model: llama3.2           # Smaller model = faster for development
+  temperature: 0.7          # Higher = more creative, lower = more deterministic
+  max_tokens: 1024          # Maximum response length
+
+# ReAct Agent settings
+react_agent:
+  max_iterations: 10        # Maximum Think→Act→Observe loops before stopping
+  tools:
+    - search                # DuckDuckGo web search
+    - calculator            # Safe math evaluation
+
+# Multi-Agent Supervisor settings
+multi_agent:
+  supervisor_model: llama3.2
+  specialist_agents:
+    - name: researcher
+      role: "Research specialist — searches the web for information"
+      tools: [search, web_scraper]
+    - name: analyst
+      role: "Data analyst — performs calculations and analysis"
+      tools: [calculator]
+    - name: writer
+      role: "Writer — drafts clear, well-structured responses"
+      tools: []

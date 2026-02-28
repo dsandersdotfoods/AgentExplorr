@@ -1,0 +1,116 @@
+# =============================================================================
+# AgentExplorr .gitignore
+# =============================================================================
+# Covers: Python, ML/AI artifacts, IDEs, Docker, notebooks, data files
+# LEARNING: https://git-scm.com/docs/gitignore
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# uv lock file is committed; cache is not
+.uv-cache/
+
+# ---------------------------------------------------------------------------
+# IDE / Editor
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------------
+# Testing & Coverage
+# ---------------------------------------------------------------------------
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---------------------------------------------------------------------------
+# ML / AI Artifacts — these can be huge, never commit them
+# ---------------------------------------------------------------------------
+# Model checkpoints & weights
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+checkpoints/
+models/
+outputs/
+
+# Datasets (download via scripts/download_datasets.py)
+data/
+*.csv
+*.tsv
+*.parquet
+*.arrow
+*.h5
+*.hdf5
+
+# MLflow tracking
+mlruns/
+mlartifacts/
+
+# Hugging Face cache
+.cache/
+
+# Vector store data
+chroma_data/
+faiss_index/
+*.faiss
+
+# TensorBoard logs
+runs/
+tb_logs/
+
+# Weights & Biases
+wandb/
+
+# ---------------------------------------------------------------------------
+# Environment & Secrets — NEVER commit these
+# ---------------------------------------------------------------------------
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# ---------------------------------------------------------------------------
+# Jupyter Notebooks — keep notebooks, ignore checkpoints
+# ---------------------------------------------------------------------------
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Docker
+# ---------------------------------------------------------------------------
+docker-compose.override.yml
+
+# ---------------------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------------------
+*.log
+*.pid
+*.seed

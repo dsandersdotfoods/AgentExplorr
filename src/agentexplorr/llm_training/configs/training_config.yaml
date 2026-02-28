@@ -1,0 +1,234 @@
+# ============================================================================
+# Training Configuration — Complete Reference
+# ============================================================================
+#
+# This file contains ALL training hyperparameters with detailed explanations.
+# It covers both LoRA and QLoRA training. Use it as a reference/template.
+#
+# HOW TO USE THIS FILE:
+#   1. Copy this file for each experiment (e.g., experiment_001.yaml)
+#   2. Modify the parameters you want to change
+#   3. Load with: tuner = LoRAFineTuner.from_yaml("path/to/config.yaml")
+#   4. Version control your configs! Each YAML is a reproducible experiment.
+#
+# EXPERIMENT TRACKING TIP:
+#   Name your configs descriptively:
+#     - lora_r16_lr2e4_3epochs.yaml
+#     - qlora_r32_alpaca_1000samples.yaml
+#     - lora_mistral7b_dolly_full.yaml
+#
+# LEARNING RESOURCES:
+#   - Hugging Face TrainingArguments reference:
+#     https://huggingface.co/docs/transformers/main_classes/trainer#trainingarguments
+#   - "A Recipe for Training Neural Networks" (Andrej Karpathy):
+#     https://karpathy.github.io/2019/04/25/recipe/
+#   - VIDEO: "Hyperparameter Tuning for LLMs" (Weights & Biases):
+#     https://www.youtube.com/watch?v=wPdq95ZiYjU
+# ============================================================================
+
+
+# ── Dataset Configuration ───────────────────────────────────────────────────
+dataset:
+  # Hugging Face Hub dataset identifier
+  # Popular instruction-tuning datasets (all free and open):
+  #   - tatsu-lab/alpaca:               52K instruction-following examples (Stanford)
+  #   - databricks/databricks-dolly-15k: 15K diverse examples (Databricks)
+  #   - yahma/alpaca-cleaned:            Cleaned version of Alpaca
+  #   - OpenAssistant/oasst1:            Multi-turn conversations (crowdsourced)
+  #   - timdettmers/openassistant-guanaco: Subset of OASST (used in QLoRA paper)
+  #   - HuggingFaceH4/no_robots:         10K high-quality instruction examples
+  name: "tatsu-lab/alpaca"
+  split: "train"
+
+  # Limit the number of training examples.
+  # START SMALL! Use 100-500 examples for debugging your pipeline,
+  # then scale up once everything works.
+  #
+  # Recommended progression:
+  #   1. max_samples: 100  → Verify pipeline works end-to-end (~2 min)
+  #   2. max_samples: 1000 → Check training dynamics (~10-20 min)
+  #   3. max_samples: 5000 → Serious experiment (~1-2 hours)
+  #   4. max_samples: null  → Full dataset (hours-days)
+  max_samples: 1000
+
+  # Validation split ratio: fraction of data held out for monitoring.
+  #   < 5K examples:   use 0.15-0.20 (15-20%)
+  #   5K-50K examples: use 0.10 (10%)
+  #   > 50K examples:  use 0.05 (5%)
+  val_split_ratio: 0.1
+
+  # Maximum sequence length in tokens (not characters!).
+  # A "token" is roughly 3/4 of a word on average.
+  #   512 tokens  ≈ 380 words  (~1.5 paragraphs)
+  #   1024 tokens ≈ 770 words  (~3 paragraphs)
+  #   2048 tokens ≈ 1540 words (~6 paragraphs)
+  #
+  # Memory scales QUADRATICALLY with this value.
+  # Set to the 95th percentile of your data's token lengths.
+  max_seq_length: 512
+
+
+# ── Model Configuration ─────────────────────────────────────────────────────
+model:
+  # Base model to fine-tune.
+  # See lora_config.yaml for model recommendations.
+  name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+
+  # Whether to use 4-bit quantization (QLoRA).
+  # Set to true to reduce memory usage by ~4x.
+  # Requires a CUDA GPU and the bitsandbytes library.
+  use_4bit: false
+
+  # 4-bit quantization settings (only used if use_4bit is true)
+  quantization:
+    # Quantization type:
+    #   "nf4": NormalFloat4 — optimal for normally-distributed weights
+    #   "fp4": Float4 — more general, slightly worse for LLMs
+    quant_type: "nf4"
+
+    # Compute dtype during forward/backward pass:
+    #   "bfloat16": Best if GPU supports it (Ampere+)
+    #   "float16": Universal GPU support
+    #   "float32": Most precise but slowest
+    compute_dtype: "bfloat16"
+
+    # Double quantization: quantize the quantization scaling factors.
+    # Saves additional ~0.4 GB per 7B parameters. No quality impact.
+    # ALWAYS enable this. There's no reason not to.
+    use_double_quant: true
+
+
+# ── LoRA Configuration ──────────────────────────────────────────────────────
+lora:
+  # See lora_config.yaml for detailed explanations of each parameter.
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+
+# ── Training Hyperparameters ────────────────────────────────────────────────
+training:
+  # ── Core Training Loop ────────────────────────────────────────────
+
+  # Number of epochs (full passes through the training data).
+  # If you have a large dataset, 1-2 epochs may be enough.
+  # If you have a small dataset, 3-5 epochs is common.
+  num_epochs: 3
+
+  # Per-GPU batch size. Reduce if you get CUDA OOM errors.
+  # Effective batch size = batch_size * gradient_accumulation_steps * num_gpus
+  batch_size: 4
+
+  # Gradient accumulation (see lora_config.yaml for explanation).
+  gradient_accumulation_steps: 4
+
+  # ── Optimizer Settings ────────────────────────────────────────────
+
+  # Learning rate — the most impactful hyperparameter.
+  # Typical range for LoRA/QLoRA: 1e-4 to 3e-4
+  learning_rate: 2.0e-4
+
+  # Optimizer choice:
+  #   "adamw_torch":       Standard AdamW (default for LoRA)
+  #   "paged_adamw_8bit":  Memory-efficient (recommended for QLoRA)
+  #   "adamw_8bit":        8-bit AdamW without paging
+  #   "sgd":               Simple SGD (rarely used for LLMs)
+  #
+  # "paged" optimizers use CPU RAM as overflow when GPU runs out,
+  # preventing OOM crashes at the cost of slightly slower training.
+  optimizer: "adamw_torch"
+
+  # Learning rate scheduler:
+  #   "cosine":   Smoothly decreases LR following a cosine curve (best default)
+  #   "linear":   Linearly decreases LR to 0 (simpler, sometimes works as well)
+  #   "constant": LR stays the same throughout training (use with warmup)
+  lr_scheduler: "cosine"
+
+  # Warmup fraction: LR linearly increases from 0 to learning_rate
+  # during this fraction of total training steps.
+  warmup_ratio: 0.03
+
+  # Weight decay (L2 regularization).
+  weight_decay: 0.01
+
+  # Maximum gradient norm for gradient clipping.
+  # Prevents "exploding gradients" where a single bad batch causes
+  # an enormous update that destabilizes the model.
+  # 1.0 is standard for LLM training. Lower (0.3-0.5) if training is very unstable.
+  max_grad_norm: 1.0
+
+  # ── Memory Optimization ──────────────────────────────────────────
+
+  # Gradient checkpointing: Recompute activations instead of storing them.
+  # Saves ~60% of activation memory at cost of ~20% more compute.
+  # ALWAYS enable for LoRA/QLoRA — the memory savings are essential.
+  gradient_checkpointing: true
+
+  # ── Precision ─────────────────────────────────────────────────────
+
+  # Mixed precision training. Enable ONE of these (or neither for FP32).
+  # The code auto-detects the best option, so you usually don't need
+  # to set these manually.
+  fp16: false
+  bf16: false
+
+  # ── Logging & Checkpointing ──────────────────────────────────────
+
+  # Log metrics every N steps.
+  logging_steps: 10
+
+  # Checkpoint saving strategy.
+  save_strategy: "epoch"
+
+  # Evaluation strategy (should match save_strategy for consistency).
+  eval_strategy: "epoch"
+
+  # ── Reproducibility ──────────────────────────────────────────────
+  seed: 42
+
+
+# ── Output Configuration ────────────────────────────────────────────────────
+output:
+  # Base directory for all training outputs.
+  dir: "./outputs"
+
+  # Subdirectory for this specific experiment.
+  # A good naming convention: {method}_{model}_{dataset}_{timestamp}
+  experiment_name: "lora_tinyllama_alpaca"
+
+  # Save the adapter (small LoRA weights only)?
+  save_adapter: true
+
+  # Merge adapter into base model and save the full model?
+  # This creates a standalone model without PEFT dependency.
+  # Useful for deployment but produces a large file.
+  save_merged: false
+
+
+# ── Evaluation Configuration ────────────────────────────────────────────────
+evaluation:
+  # Run evaluation after training?
+  run_eval: true
+
+  # Maximum samples for perplexity computation (more = slower but more accurate).
+  max_perplexity_samples: 100
+
+  # Number of sample outputs to generate for qualitative review.
+  max_generation_samples: 10
+
+  # Maximum tokens per generated response.
+  max_new_tokens: 256
+
+  # Generation temperature.
+  # 0.0 = deterministic (always picks most likely token)
+  # 0.7 = moderate randomness (good for creative tasks)
+  # 1.0 = full randomness from model's distribution
+  temperature: 0.7

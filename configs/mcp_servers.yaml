@@ -1,0 +1,23 @@
+# =============================================================================
+# MCP Server Configuration
+# =============================================================================
+# Define MCP servers and their settings.
+
+servers:
+  filesystem:
+    module: agentexplorr.mcp.servers.filesystem_server
+    transport: stdio
+    settings:
+      base_directory: "."   # Restrict file access to project root
+
+  database:
+    module: agentexplorr.mcp.servers.database_server
+    transport: stdio
+    settings:
+      db_path: "data/sample.db"
+
+  weather_api:
+    module: agentexplorr.mcp.servers.api_server
+    transport: stdio
+    settings:
+      base_url: "https://api.open-meteo.com/v1"

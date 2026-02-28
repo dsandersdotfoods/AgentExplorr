@@ -1,0 +1,45 @@
+# =============================================================================
+# Pre-commit hooks — automatically run checks before each commit
+# =============================================================================
+# Install: make pre-commit-install
+# Run manually: make pre-commit-run
+#
+# LEARNING RESOURCE:
+#   - Pre-commit docs: https://pre-commit.com/
+#   - VIDEO: "Pre-commit Hooks" — https://www.youtube.com/watch?v=psjz6rwzMdk
+# =============================================================================
+
+repos:
+  # General file checks (trailing whitespace, merge conflicts, etc.)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']  # Block files > 1MB (no model weights!)
+      - id: check-merge-conflict
+      - id: debug-statements        # Catch leftover breakpoint() calls
+
+  # Ruff — linting + formatting in one blazing-fast tool
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff                     # Linter
+        args: [--fix]
+      - id: ruff-format              # Formatter (replaces black)
+
+  # Mypy — static type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.13.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.0
+          - pydantic-settings>=2.0
+          - types-PyYAML>=6.0
+          - types-aiofiles>=24.0
+        args: [--config-file=pyproject.toml]
+        pass_filenames: false

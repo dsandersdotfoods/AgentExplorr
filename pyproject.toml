@@ -1,0 +1,287 @@
+# =============================================================================
+# AgentExplorr — AI/ML Playground & Portfolio
+# =============================================================================
+# This is the single source of truth for the entire project's configuration.
+#
+# LEARNING RESOURCE:
+#   - pyproject.toml specification: https://packaging.python.org/en/latest/specifications/pyproject-toml/
+#   - uv documentation: https://docs.astral.sh/uv/
+#   - Video: "Modern Python Packaging" — https://www.youtube.com/watch?v=v6tALyc4C10
+# =============================================================================
+
+[build-system]
+# Hatchling is a modern, standards-compliant Python build backend.
+# Unlike setuptools, it requires zero configuration for simple projects.
+# Docs: https://hatch.pypa.io/latest/
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentexplorr"
+version = "0.1.0"
+description = "A comprehensive AI/ML playground exploring agents, MCP, LLM training, RAG, and classical ML — all open source."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+authors = [{ name = "AgentExplorr" }]
+keywords = [
+    "ai",
+    "ml",
+    "agents",
+    "mcp",
+    "llm",
+    "fine-tuning",
+    "rag",
+    "langchain",
+    "pytorch",
+    "transformers",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# ---------------------------------------------------------------------------
+# Core dependencies — always installed
+# ---------------------------------------------------------------------------
+dependencies = [
+    # Configuration & logging
+    "pydantic>=2.0,<3",
+    "pydantic-settings>=2.0,<3",
+    "structlog>=24.0",
+    "rich>=13.0",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    # HTTP & async
+    "httpx>=0.27",
+    "aiofiles>=24.0",
+]
+
+# ---------------------------------------------------------------------------
+# Optional dependency groups — install what you need
+#
+# Usage:
+#   uv sync --extra agents          # install only the agents extras
+#   uv sync --extra all             # install everything
+#   uv sync --all-extras --dev      # install everything + dev tools
+# ---------------------------------------------------------------------------
+[project.optional-dependencies]
+
+# AI Agents: LangChain + LangGraph with Ollama (no commercial API keys!)
+# LEARNING: https://python.langchain.com/docs/get_started/introduction
+# VIDEO: "LangGraph Crash Course" — https://www.youtube.com/watch?v=R8KB-Zcynxc
+agents = [
+    "langchain>=0.3,<1",
+    "langgraph>=0.2,<1",
+    "langchain-ollama>=0.2,<1",
+    "langchain-huggingface>=0.1,<1",
+    "langchain-community>=0.3,<1",
+    "duckduckgo-search>=6.0",
+    "beautifulsoup4>=4.12",
+]
+
+# Model Context Protocol (MCP) — the open standard for tool-using LLMs
+# LEARNING: https://modelcontextprotocol.io/
+# VIDEO: "MCP Explained" — https://www.youtube.com/watch?v=kQmXtrmQ5Zg
+mcp = [
+    "mcp>=1.0,<2",
+    "uvicorn>=0.30",
+    "sse-starlette>=2.0",
+]
+
+# LLM Fine-tuning — LoRA/QLoRA with Hugging Face ecosystem
+# LEARNING: https://huggingface.co/docs/peft/main/en/index
+# VIDEO: "Fine-Tune LLMs with LoRA" — https://www.youtube.com/watch?v=YVU5wAA6Txo
+training = [
+    "transformers>=4.45,<5",
+    "peft>=0.13,<1",
+    "trl>=0.12,<1",
+    "datasets>=3.0,<4",
+    "accelerate>=1.0,<2",
+    "bitsandbytes>=0.44",
+    "evaluate>=0.4",
+    "rouge-score>=0.1",
+    "nltk>=3.9",
+    "sentencepiece>=0.2",
+]
+
+# Classical ML & Deep Learning
+# LEARNING: https://scikit-learn.org/stable/user_guide.html
+# VIDEO: "PyTorch in 100 Seconds" — https://www.youtube.com/watch?v=ORMx45xqWkA
+ml = [
+    "scikit-learn>=1.5",
+    "torch>=2.4",
+    "torchvision>=0.19",
+    "mlflow>=2.17",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "pandas>=2.2",
+    "numpy>=1.26,<2",
+]
+
+# RAG — Retrieval Augmented Generation
+# LEARNING: https://docs.trychroma.com/
+# VIDEO: "RAG From Scratch" — https://www.youtube.com/watch?v=sVcwVQRHIc8
+rag = [
+    "chromadb>=0.5",
+    "faiss-cpu>=1.8",
+    "sentence-transformers>=3.0",
+    "langchain-text-splitters>=0.3",
+    "pypdf>=5.0",
+    "unstructured>=0.15",
+    "ragas>=0.2",
+]
+
+# Prompt Engineering
+prompts = [
+    "jinja2>=3.1",
+    "langchain>=0.3,<1",
+    "langchain-ollama>=0.2,<1",
+]
+
+# Notebooks — extra deps for interactive exploration
+notebooks = [
+    "jupyterlab>=4.0",
+    "ipywidgets>=8.0",
+    "plotly>=5.0",
+    "tqdm>=4.66",
+]
+
+# ALL extras combined — convenience group
+all = [
+    "agentexplorr[agents,mcp,training,ml,rag,prompts,notebooks]",
+]
+
+# ---------------------------------------------------------------------------
+# Development dependencies — linting, testing, type-checking
+# ---------------------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "pre-commit>=4.0",
+    "types-PyYAML>=6.0",
+    "types-aiofiles>=24.0",
+    "types-beautifulsoup4>=4.12",
+]
+
+# ---------------------------------------------------------------------------
+# Tool configurations — all in one place
+# ---------------------------------------------------------------------------
+
+# Ruff — the all-in-one Python linter & formatter (replaces flake8 + isort + black)
+# LEARNING: https://docs.astral.sh/ruff/
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort (import sorting)
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "SIM",   # flake8-simplify
+    "RUF",   # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long — handled by formatter
+    "B008",   # do not perform function calls in argument defaults (needed for FastAPI/Pydantic)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["agentexplorr"]
+
+# Mypy — static type checker
+# LEARNING: https://mypy.readthedocs.io/en/stable/
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+# Allow untyped calls for third-party libs that lack stubs
+disallow_untyped_calls = false
+# Ignore missing stubs for ML/AI libraries (many lack type stubs)
+[[tool.mypy.overrides]]
+module = [
+    "langchain.*",
+    "langgraph.*",
+    "langchain_ollama.*",
+    "langchain_huggingface.*",
+    "langchain_community.*",
+    "langchain_text_splitters.*",
+    "chromadb.*",
+    "faiss.*",
+    "sentence_transformers.*",
+    "transformers.*",
+    "peft.*",
+    "trl.*",
+    "datasets.*",
+    "accelerate.*",
+    "bitsandbytes.*",
+    "evaluate.*",
+    "mlflow.*",
+    "torch.*",
+    "torchvision.*",
+    "sklearn.*",
+    "matplotlib.*",
+    "seaborn.*",
+    "duckduckgo_search.*",
+    "bs4.*",
+    "mcp.*",
+    "sse_starlette.*",
+    "ragas.*",
+    "unstructured.*",
+    "pypdf.*",
+    "rouge_score.*",
+    "plotly.*",
+    "ipywidgets.*",
+]
+ignore_missing_imports = true
+
+# Pytest — testing framework
+# LEARNING: https://docs.pytest.org/en/stable/
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--cov=src/agentexplorr",
+    "--cov-report=term-missing",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require GPU",
+    "integration: marks integration tests requiring external services",
+]
+asyncio_mode = "auto"
+
+# Coverage — code coverage settings
+[tool.coverage.run]
+source = ["src/agentexplorr"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
