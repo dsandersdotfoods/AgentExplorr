@@ -1,102 +1,107 @@
-# ============================================================================
+# =============================================================================
 # LoRA Configuration for LLM Fine-Tuning
-# ============================================================================
+# =============================================================================
 #
-# This file configures the LoRA (Low-Rank Adaptation) hyperparameters.
-# Load it with:
+# This file configures the LoRA (Low-Rank Adaptation) fine-tuning process.
+# Every parameter is explained with WHY it matters and WHAT values to try.
+#
+# USAGE:
+#   from agentexplorr.llm_training.fine_tune_lora import LoRAFineTuner
 #   tuner = LoRAFineTuner.from_yaml("configs/lora_config.yaml")
 #
-# WHAT TO TUNE FIRST (in order of impact):
-#   1. learning_rate     — Most impactful. Start with 2e-4.
-#   2. num_train_epochs  — 3 is a good default. Watch val loss.
-#   3. lora_r            — 16 works for most tasks. Try 8 or 32.
-#   4. batch size        — As large as your GPU allows (see below).
+# TIP: Create multiple config files for different experiments:
+#   lora_config_small.yaml   (r=8, quick experiments)
+#   lora_config_medium.yaml  (r=16, balanced — THIS FILE)
+#   lora_config_large.yaml   (r=64, maximum quality)
 #
 # LEARNING RESOURCES:
-#   - Sebastian Raschka's "Practical Tips for Finetuning LLMs":
-#     https://magazine.sebastianraschka.com/p/practical-tips-for-finetuning-llms
-#   - Hugging Face PEFT docs: https://huggingface.co/docs/peft
-#   - VIDEO: "How to Pick LoRA Hyperparameters" (Trelis Research):
-#     https://www.youtube.com/watch?v=XpoKB3usmKc
-# ============================================================================
+#   - LoRA paper: https://arxiv.org/abs/2106.09685
+#   - PEFT docs: https://huggingface.co/docs/peft
+#   - VIDEO: "LoRA Explained" (Umar Jamil):
+#     https://www.youtube.com/watch?v=PXWYUTMt-AU
+# =============================================================================
 
 
-# ── Model ────────────────────────────────────────────────────────────────────
-# The base model to fine-tune. TinyLlama is recommended for LEARNING because
-# it's small (1.1B params, ~4.5 GB in FP32) and trains fast.
+# =============================================================================
+# MODEL SELECTION
+# =============================================================================
+# Which pre-trained model to fine-tune.
 #
-# Other good options:
-#   - "microsoft/phi-2"                       (2.7B, great for its size)
-#   - "mistralai/Mistral-7B-v0.1"             (7B, production quality)
-#   - "meta-llama/Llama-2-7b-hf"              (7B, needs HF access token)
-#   - "NousResearch/Llama-2-7b-hf"            (7B, community upload, no token needed)
+# RECOMMENDATIONS BY GPU MEMORY:
+#   - 4 GB VRAM  : TinyLlama/TinyLlama-1.1B-Chat-v1.0  (use QLoRA)
+#   - 8 GB VRAM  : TinyLlama (LoRA) or Mistral-7B (QLoRA)
+#   - 16 GB VRAM : Mistral-7B (LoRA) or Llama-2-13B (QLoRA)
+#   - 24 GB VRAM : Llama-2-13B (LoRA) or Llama-2-70B (QLoRA)
+#   - 80 GB VRAM : Llama-2-70B (LoRA, full A100)
+#
+# TinyLlama is the default because it's PERFECT for learning:
+#   - Small enough to train in minutes (not hours)
+#   - Uses the same architecture as Llama 2 (skills transfer!)
+#   - Free, no gated access required
 base_model_name: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
 
-# ── LoRA Hyperparameters ────────────────────────────────────────────────────
+# =============================================================================
+# LoRA HYPERPARAMETERS
+# =============================================================================
+# These control the LoRA adapter architecture.
+# The math: y = W*x + (alpha/r) * B*A*x
+#   where W = frozen base weights, A and B = trainable LoRA matrices
 
-# RANK (r): The most important LoRA parameter.
+# RANK (r): The dimensionality of the low-rank decomposition.
+# This is the single most important LoRA hyperparameter.
 #
-# Controls the size of the low-rank matrices A (d x r) and B (r x d).
-# Higher rank = more trainable parameters = more capacity to learn.
+# How it affects trainable parameters:
+#   r=8  → ~2M trainable params (0.2% of TinyLlama)
+#   r=16 → ~4M trainable params (0.4% of TinyLlama)  ← DEFAULT
+#   r=32 → ~8M trainable params (0.7% of TinyLlama)
+#   r=64 → ~16M trainable params (1.5% of TinyLlama)
 #
-# Think of rank like the number of "features" the adapter can learn:
-#   r=8:   ~2.1M trainable params → Good for simple tasks (classification)
-#   r=16:  ~4.2M trainable params → Good default for instruction following
-#   r=32:  ~8.4M trainable params → Better for complex/diverse tasks
-#   r=64:  ~16.8M trainable params → Approaches full fine-tuning quality
-#
-# RECOMMENDATION: Start with 16. If underfitting, try 32 or 64.
-#                 If overfitting, try 8 or increase dropout.
+# RULE OF THUMB: Start with r=16. If underfitting (val loss plateaus
+# high), increase to 32 or 64. If overfitting, decrease to 8.
 lora_r: 16
 
 # ALPHA: Scaling factor for the LoRA update.
+# Effective scaling = alpha / r.
 #
-# The LoRA output is scaled by (alpha / r) before being added to the
-# original layer output. This controls how STRONGLY the adapter affects
-# the model's behavior.
+# With r=16 and alpha=32: scaling = 2.0 (slightly aggressive)
+# With r=16 and alpha=16: scaling = 1.0 (conservative)
 #
-# Common strategies:
-#   alpha = 2*r → Scaling factor = 2.0 (our default, slightly aggressive)
-#   alpha = r   → Scaling factor = 1.0 (conservative, very stable)
-#   alpha = 1   → Scaling factor = 1/r (very subtle adaptation)
+# Higher alpha → model changes more per update → faster adaptation
+# but potentially less stable training.
 #
-# If training is unstable (loss spikes), REDUCE alpha.
-# If the model isn't learning, INCREASE alpha.
+# COMMON PRACTICE: Set alpha = 2 * r for a good balance.
 lora_alpha: 32
 
 # DROPOUT: Regularization for LoRA layers.
+# Randomly sets some LoRA activations to zero during training.
 #
-# Randomly zeros out a fraction of LoRA activations during training.
-# This prevents overfitting by ensuring the adapter doesn't rely on
-# any single neuron too much.
-#
-#   0.0:  No dropout (fine for datasets > 10K examples)
-#   0.05: Light dropout (good default)
-#   0.1:  Moderate (for datasets < 5K examples)
-#   0.2:  Heavy (only if severely overfitting)
+# 0.00 = No dropout (large datasets, no overfitting risk)
+# 0.05 = Light dropout (medium datasets) ← DEFAULT
+# 0.10 = Moderate dropout (small datasets, <1K examples)
+# 0.20 = Heavy dropout (very small datasets or extreme overfitting)
 lora_dropout: 0.05
 
-# TARGET MODULES: Which layers in the transformer to apply LoRA to.
+# TARGET MODULES: Which layers to apply LoRA to.
 #
-# Each transformer layer has these linear layers:
-#
+# In a Transformer block:
 #   Self-Attention:
-#     q_proj → Query projection  (what am I looking for?)
-#     k_proj → Key projection    (what do I contain?)
-#     v_proj → Value projection   (what information do I carry?)
-#     o_proj → Output projection  (combine attended information)
+#     q_proj — Query: "What am I looking for?"
+#     k_proj — Key: "What do I contain?"
+#     v_proj — Value: "What information do I carry?"
+#     o_proj — Output projection: combines attention heads
 #
-#   Feed-Forward / MLP:
-#     gate_proj → Gating mechanism (Llama/Mistral architecture)
-#     up_proj   → Project to intermediate dimension
-#     down_proj → Project back to model dimension
+#   MLP (Feed-Forward Network):
+#     gate_proj — Gating mechanism (Llama/Mistral architecture)
+#     up_proj — Projects to higher dimension
+#     down_proj — Projects back to model dimension
 #
-# Original LoRA paper: Only q_proj and v_proj (minimalist approach)
-# QLoRA paper finding: ALL layers gives better results (our default)
+# The original LoRA paper only used q_proj and v_proj.
+# The QLoRA paper showed that applying to ALL linear layers is better.
+# We follow the QLoRA recommendation.
 #
-# MORE modules = more parameters = better quality but more memory.
-# If memory is tight, start with just: [q_proj, v_proj]
+# TRADE-OFF: More modules = more parameters = better quality but more memory.
+# For quick experiments, try just: [q_proj, v_proj]
 target_modules:
   - q_proj
   - k_proj
@@ -107,125 +112,108 @@ target_modules:
   - down_proj
 
 
-# ── Training Hyperparameters ────────────────────────────────────────────────
+# =============================================================================
+# TRAINING HYPERPARAMETERS
+# =============================================================================
 
-# EPOCHS: Number of full passes through the training data.
-#
-# Each epoch, the model sees every training example once.
-# More epochs = more learning, but risk of overfitting.
+# EPOCHS: Number of complete passes through the training data.
+# 1 = model sees each example once (often underfitted)
+# 3 = good starting point ← DEFAULT
+# 5 = risk of overfitting on small datasets
 #
 # WATCH YOUR VALIDATION LOSS:
-#   - Val loss still decreasing → train more epochs
-#   - Val loss plateaued → you're done, stop training
-#   - Val loss increasing → you're overfitting, use fewer epochs
-#
-# Typical values: 1-5. Start with 3.
+#   - Val loss still decreasing at epoch 3? Try 5 epochs.
+#   - Val loss increasing at epoch 2? Try 1-2 epochs or more regularization.
 num_train_epochs: 3
 
-# BATCH SIZE: Number of examples per GPU per training step.
+# BATCH SIZE: Examples processed per GPU per step.
+# Larger = more stable gradients, faster training, but more VRAM.
 #
-# Directly affects GPU memory usage. If you get CUDA OOM:
+# If you get CUDA OOM:
 #   1. Reduce this to 2 or 1
 #   2. Increase gradient_accumulation_steps to compensate
-#
-# VRAM requirements (approximate, for TinyLlama with seq_len=512):
-#   batch_size=1:  ~5 GB VRAM
-#   batch_size=4:  ~7 GB VRAM
-#   batch_size=8:  ~10 GB VRAM
-#   batch_size=16: ~15 GB VRAM
+#   3. effective_batch_size = batch_size * gradient_accumulation_steps
 per_device_train_batch_size: 4
 
-# GRADIENT ACCUMULATION: Simulates a larger batch size without more memory.
+# GRADIENT ACCUMULATION: Simulate larger batches without more VRAM.
+# With batch_size=4 and accumulation=4: effective batch = 16.
 #
-# Effective batch size = per_device_train_batch_size * gradient_accumulation_steps
-# With our defaults: 4 * 4 = 16
+# This is a MEMORY-SAVING TRICK. Instead of processing 16 examples
+# at once (which might not fit in VRAM), we process 4 at a time,
+# accumulate gradients 4 times, THEN update the weights.
 #
-# How it works:
-#   Step 1: Forward+backward on batch 1, store gradients
-#   Step 2: Forward+backward on batch 2, ACCUMULATE gradients
-#   Step 3: Forward+backward on batch 3, ACCUMULATE gradients
-#   Step 4: Forward+backward on batch 4, ACCUMULATE gradients → UPDATE weights
-#
-# Larger effective batch = smoother gradients = more stable training.
+# The model sees the same effective batch size either way.
 gradient_accumulation_steps: 4
 
 # LEARNING RATE: How big each weight update step is.
+# THE most important training hyperparameter.
 #
-# THIS IS THE MOST IMPORTANT HYPERPARAMETER.
+# Too high (>1e-3) → unstable training, loss oscillates/diverges
+# Too low  (<1e-5) → painfully slow, model barely changes
+# Sweet spot: 1e-4 to 3e-4 for LoRA fine-tuning
 #
-# Learning rate schedule (what actually happens):
-#   1. Warmup: LR linearly increases from 0 to this value (first 3% of steps)
-#   2. Cosine decay: LR gradually decreases following a cosine curve
-#   3. End: LR approaches 0 at the end of training
-#
-# If training is unstable → DECREASE learning rate (try 1e-4)
-# If training is too slow → INCREASE learning rate (try 3e-4)
-#
-# Typical range for LoRA: 1e-4 to 3e-4
-# Full fine-tuning uses much lower: 1e-5 to 5e-5
+# EXPLORATION STRATEGY:
+#   1. Start with 2e-4 (this default)
+#   2. If loss decreases smoothly → you're good
+#   3. If loss oscillates → try 1e-4 (halve it)
+#   4. If loss barely moves → try 5e-4 (increase it)
 learning_rate: 2.0e-4
 
-# WARMUP: Fraction of training steps where LR increases from 0.
+# WARMUP: Fraction of training steps with linearly increasing LR.
+# Learning rate goes from 0 → learning_rate over this fraction.
 #
-# Why warmup? At the start of training, the LoRA weights are randomly
-# initialized. Large learning rate + random weights = chaotic updates.
-# Warmup gradually increases the LR, giving the model time to adjust.
-#
-# 0.03 = 3% of training steps devoted to warmup (good default)
+# WHY WARMUP?
+#   LoRA weights are randomly initialized. At step 0, the gradients
+#   are essentially random noise. A high learning rate at this point
+#   would make large, destructive random updates. Warmup starts with
+#   tiny updates and gradually increases as the gradients become meaningful.
 warmup_ratio: 0.03
 
-# MAX SEQUENCE LENGTH: Maximum number of tokens per training example.
+# MAX SEQUENCE LENGTH: Maximum tokens per training example.
+# Must match what you used in data_preparation.py!
 #
-# Must match the value used during data preparation!
-#
-# Memory scales QUADRATICALLY with sequence length (because of self-attention).
-# Doubling this roughly quadruples memory usage:
-#   512 tokens:  ~7 GB (good for short Q&A, classification)
-#   1024 tokens: ~12 GB (good for instruction following)
-#   2048 tokens: ~22 GB (good for longer generation)
+# VRAM scales QUADRATICALLY with this (attention is O(n^2)):
+#   512  → ~1x VRAM (good for most tasks) ← DEFAULT
+#   1024 → ~4x VRAM (longer context tasks)
+#   2048 → ~16x VRAM (long document tasks — needs big GPU)
 max_seq_length: 512
 
-# WEIGHT DECAY: L2 regularization to prevent overfitting.
+# WEIGHT DECAY: L2 regularization strength.
+# Shrinks weight magnitudes to prevent overfitting.
+# Applied to all params EXCEPT biases and LayerNorm (those shouldn't decay).
 #
-# Adds a penalty proportional to the magnitude of weights.
-# Keeps weights small, which acts as a form of regularization.
-#
-# 0.0:  No regularization
-# 0.01: Light (good default)
-# 0.1:  Strong (if overfitting is severe)
+# 0.00 = No regularization (large datasets)
+# 0.01 = Light regularization ← DEFAULT
+# 0.10 = Strong regularization (if overfitting badly)
 weight_decay: 0.01
 
-# ── Output & Logging ────────────────────────────────────────────────────────
-
-# Where to save checkpoints and the final adapter.
+# OUTPUT DIRECTORY: Where to save checkpoints and final model.
+# Checkpoints are saved according to save_strategy.
 output_dir: "./outputs/lora_finetuned"
 
-# Log training metrics (loss, LR, etc.) every N steps.
-# Lower = more granular logs but slightly slower training.
+# LOGGING: Print training metrics every N steps.
+# Lower = more frequent updates (useful for monitoring)
+# Higher = less console noise
 logging_steps: 10
 
-# When to save checkpoints:
-#   "epoch" — Save after each epoch (recommended)
-#   "steps" — Save every N steps (set save_steps too)
-#   "no"    — Don't save checkpoints (only final model)
+# SAVE STRATEGY: When to save model checkpoints.
+# "epoch" = save after each epoch (most common)
+# "steps" = save every N steps (use with save_steps parameter)
+# "no"    = don't save checkpoints (save manually)
 save_strategy: "epoch"
 
-# ── Precision ───────────────────────────────────────────────────────────────
-# Enable ONE of these (or neither for FP32 on CPU):
+# MIXED PRECISION: Use lower precision for faster training.
 #
-# BF16 (recommended if available):
-#   - Same exponent range as FP32 (more stable than FP16)
-#   - Requires Ampere+ GPU (RTX 3000+, A100, L4)
-#   - Check: python -c "import torch; print(torch.cuda.is_bf16_supported())"
+# Check your GPU:
+#   - RTX 3000+, A100, L4, T4: Use bf16=true (most stable)
+#   - RTX 2000, V100: Use fp16=true (bf16 not supported)
+#   - CPU: Both false
 #
-# FP16 (fallback):
-#   - Supported on all CUDA GPUs
-#   - Can have numerical issues (NaN loss) — uses loss scaling to mitigate
+# Never set both to true!
 fp16: false
 bf16: false
-# TIP: The code auto-detects your GPU and enables the best option.
-#      You usually don't need to set these manually.
 
-# Random seed for reproducibility. Same seed + same data + same config
-# = same results (modulo GPU non-determinism in some CUDA operations).
+# RANDOM SEED: For reproducible experiments.
+# Same seed + same data + same config = same results.
+# Essential for scientific rigor and debugging.
 seed: 42
