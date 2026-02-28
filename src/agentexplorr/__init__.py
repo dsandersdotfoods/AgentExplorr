@@ -3,6 +3,7 @@ AgentExplorr — AI/ML Playground & Portfolio
 ============================================
 
 A comprehensive, hands-on exploration of modern AI/ML:
+  - Math Foundations (backpropagation, optimizers, loss functions, linear algebra)
   - AI Agents (LangGraph + Ollama)
   - Model Context Protocol (MCP)
   - LLM Fine-tuning (LoRA/QLoRA)

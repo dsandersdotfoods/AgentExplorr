@@ -2,7 +2,7 @@
 
 ## System Overview
 
-AgentExplorr is organized as a Python monorepo with six independent modules, each exploring a different area of modern AI/ML. All modules share a common core for configuration, logging, and utilities.
+AgentExplorr is organized as a Python monorepo with seven independent modules, each exploring a different area of modern AI/ML. All modules share a common core for configuration, logging, and utilities. The **foundations** module teaches the math from scratch — start there if you want to understand what's happening under the hood.
 
 ```
                             ┌─────────────────────┐
@@ -17,20 +17,29 @@ AgentExplorr is organized as a Python monorepo with six independent modules, eac
           │ config/log  │    │  (interactive)  │   │  (pytest)     │
           └──────┬──────┘    └─────────────────┘   └───────────────┘
                  │
-    ┌────────────┼────────────┬────────────┬────────────┬────────────┐
-    │            │            │            │            │            │
-┌───┴───┐  ┌────┴────┐  ┌────┴────┐  ┌────┴────┐  ┌───┴────┐  ┌───┴────┐
-│Agents │  │   MCP   │  │  LLM    │  │Classical│  │  RAG   │  │Prompt  │
-│       │  │         │  │Training │  │  ML/DL  │  │        │  │  Eng.  │
-│LangGr.│  │ Servers │  │ LoRA    │  │ sklearn │  │ChromaDB│  │Jinja2  │
-│Ollama │  │ Clients │  │ QLoRA   │  │ PyTorch │  │ FAISS  │  │Few-shot│
-│Tools  │  │ Tools   │  │ HF PEFT │  │ MLflow  │  │Sentence│  │  CoT   │
-└───────┘  └─────────┘  └─────────┘  └─────────┘  └────────┘  └────────┘
+    ┌──────┬────────────┬────────────┬────────────┬────────────┬────────────┐
+    │      │            │            │            │            │            │
+┌───┴───┐  │  ┌────┴────┐  ┌────┴────┐  ┌────┴────┐  ┌───┴────┐  ┌───┴────┐
+│Foundn.│  │  │   MCP   │  │  LLM    │  │Classical│  │  RAG   │  │Prompt  │
+│       │  │  │         │  │Training │  │  ML/DL  │  │        │  │  Eng.  │
+│Backpr.│  │  │ Servers │  │ LoRA    │  │ sklearn │  │ChromaDB│  │Jinja2  │
+│Optim. │  │  │ Clients │  │ QLoRA   │  │ PyTorch │  │ FAISS  │  │Few-shot│
+│Loss   │  │  │ Tools   │  │ HF PEFT │  │ MLflow  │  │Sentence│  │  CoT   │
+│LinAlg │  │  └─────────┘  └─────────┘  └─────────┘  └────────┘  └────────┘
+│Activ. │  │
+└───────┘  │
+       ┌───┴───┐
+       │Agents │
+       │LangGr.│
+       │Ollama │
+       │Tools  │
+       └───────┘
 ```
 
 ## Module Dependencies
 
 ```
+foundations         ──►  core (standalone math — learn this first!)
 prompt_engineering  ──►  (standalone, no inter-module deps)
 rag                 ──►  core, prompt_engineering
 agents              ──►  core, prompt_engineering

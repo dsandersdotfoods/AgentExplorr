@@ -70,6 +70,7 @@ Each module has its own README with detailed explanations:
 
 | Module | Start Here | What You'll Learn |
 |--------|-----------|------------------|
+| Math Foundations | `src/agentexplorr/foundations/README.md` | Backprop, optimizers, loss functions, linear algebra |
 | Prompt Engineering | `src/agentexplorr/prompt_engineering/README.md` | Templates, few-shot, CoT, structured output |
 | RAG | `src/agentexplorr/rag/README.md` | Document processing, embeddings, vector stores |
 | Agents | `src/agentexplorr/agents/README.md` | ReAct, tool-calling, multi-agent systems |
@@ -104,12 +105,13 @@ make docker-down
 
 ## Learning Path (Recommended Order)
 
-1. **Prompt Engineering** — Foundations, no GPU needed
-2. **RAG** — Applied NLP, builds on prompting
-3. **Agents** — Combines prompting + tools
-4. **MCP** — Protocol for tool-using AI
-5. **Classical ML** — Fundamentals of ML
-6. **LLM Training** — Advanced, requires GPU
+1. **Math Foundations** — The math behind everything (start here to understand the WHY)
+2. **Prompt Engineering** — Foundations, no GPU needed
+3. **RAG** — Applied NLP, builds on prompting
+4. **Agents** — Combines prompting + tools
+5. **MCP** — Protocol for tool-using AI
+6. **Classical ML** — Fundamentals of ML (applies the math from foundations)
+7. **LLM Training** — Advanced, requires GPU
 
 ## Troubleshooting
 

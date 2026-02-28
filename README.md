@@ -25,17 +25,27 @@ AgentExplorr is a hands-on playground for learning and experimenting with modern
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                            AgentExplorr                                    │
 ├──────────┬──────────┬──────────┬──────────┬──────────┬──────────┬──────────┤
-│  Agents  │   MCP    │   LLM    │Classical │   RAG    │  Prompt  │  Core    │
-│          │          │ Training │  ML/DL   │          │   Eng.   │          │
-│ LangGraph│ Servers  │ LoRA     │ sklearn  │ ChromaDB │ Jinja2   │ Config   │
-│ Ollama   │ Clients  │ QLoRA    │ PyTorch  │ FAISS    │ Few-shot │ Logging  │
-│ Tools    │ Tools    │ HF PEFT  │ MLflow   │ sentence-│ CoT      │ Utils    │
-│ ReAct    │ JSON-RPC │ TRL      │ CNN      │ transform│ Struct.  │ Pydantic │
-│ Multi-ag.│ stdio    │ Datasets │ Transf.  │ Hybrid   │ Output   │ structlog│
+│  Math    │  Agents  │   MCP    │   LLM    │Classical │   RAG    │  Prompt  │
+│ Found.   │          │          │ Training │  ML/DL   │          │   Eng.   │
+│ Backprop │ LangGraph│ Servers  │ LoRA     │ sklearn  │ ChromaDB │ Jinja2   │
+│ Optimiz. │ Ollama   │ Clients  │ QLoRA    │ PyTorch  │ FAISS    │ Few-shot │
+│ Loss Fn  │ Tools    │ Tools    │ HF PEFT  │ MLflow   │ sentence-│ CoT      │
+│ Lin. Alg │ ReAct    │ JSON-RPC │ TRL      │ CNN      │ transform│ Struct.  │
+│ Activat. │ Multi-ag.│ stdio    │ Datasets │ Transf.  │ Hybrid   │ Output   │
 └──────────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
 ```
 
 ## Modules
+
+### 0. Math Foundations
+The math behind machine learning — explained from scratch with runnable code.
+- **Backpropagation** — Chain rule, computational graphs, gradient flow
+- **Optimizers** — SGD, Momentum, Adam, AdamW with full update rules
+- **Loss Functions** — MSE, Cross-Entropy, NLL with derivations
+- **Activations** — ReLU, GELU, Sigmoid, Softmax with derivatives
+- **Linear Algebra** — Dot products, norms, SVD (the math behind LoRA)
+
+📁 `src/agentexplorr/foundations/` · 📖 [README](src/agentexplorr/foundations/README.md)
 
 ### 1. AI Agents
 Build autonomous agents that reason and use tools.
