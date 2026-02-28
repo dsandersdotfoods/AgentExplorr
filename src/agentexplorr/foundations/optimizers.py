@@ -181,7 +181,7 @@ class Optimizer:
                 f"params and grads must have the same length, "
                 f"got {len(params)} and {len(grads)}"
             )
-        for i, (p, g) in enumerate(zip(params, grads)):
+        for i, (p, g) in enumerate(zip(params, grads, strict=False)):
             if p.shape != g.shape:
                 raise ValueError(
                     f"Shape mismatch at index {i}: "
@@ -289,7 +289,7 @@ class SGD(Optimizer):
         self.t += 1
 
         updated = []
-        for p, g in zip(params, grads):
+        for p, g in zip(params, grads, strict=False):
             # The core update: step downhill
             p_new = p - self.lr * g
             updated.append(p_new)
@@ -302,7 +302,7 @@ class SGD(Optimizer):
 # =============================================================================
 
 class Momentum(Optimizer):
-    """SGD with Momentum — accelerates convergence by accumulating velocity.
+    r"""SGD with Momentum — accelerates convergence by accumulating velocity.
 
     THE KEY IDEA:
         Instead of using only the current gradient, maintain a running average
@@ -443,7 +443,7 @@ class Momentum(Optimizer):
         self.t += 1
 
         updated = []
-        for i, (p, g) in enumerate(zip(params, grads)):
+        for i, (p, g) in enumerate(zip(params, grads, strict=False)):
             # Initialize velocity to zeros on first step
             if i not in self.state:
                 self.state[i] = {"v": np.zeros_like(p)}
@@ -457,15 +457,9 @@ class Momentum(Optimizer):
             v = self.beta * v + g
             self.state[i]["v"] = v
 
-            if self.nesterov:
-                # Nesterov: use the look-ahead gradient
-                # w = w - lr * (g + beta * v)
-                # The extra "beta * v" term is the look-ahead correction.
-                p_new = p - self.lr * (g + self.beta * v)
-            else:
-                # Standard momentum: use velocity directly
-                # w = w - lr * v
-                p_new = p - self.lr * v
+            # Nesterov: w = w - lr * (g + beta * v) — look-ahead correction
+            # Standard: w = w - lr * v — velocity directly
+            p_new = p - self.lr * (g + self.beta * v) if self.nesterov else p - self.lr * v
 
             updated.append(p_new)
 
@@ -652,7 +646,7 @@ class Adam(Optimizer):
         self.t += 1
 
         updated = []
-        for i, (p, g) in enumerate(zip(params, grads)):
+        for i, (p, g) in enumerate(zip(params, grads, strict=False)):
             # Initialize state on first step
             if i not in self.state:
                 self.state[i] = {
@@ -873,7 +867,7 @@ class AdamW(Optimizer):
         self.t += 1
 
         updated = []
-        for i, (p, g) in enumerate(zip(params, grads)):
+        for i, (p, g) in enumerate(zip(params, grads, strict=False)):
             # Initialize state on first step
             if i not in self.state:
                 self.state[i] = {
@@ -1374,7 +1368,7 @@ if __name__ == "__main__":
         opt_m.reset()
         params_m = [start_mom[0].copy()]
 
-        for step in range(200):
+        for _step in range(200):
             loss_m, grad_m = quadratic_bowl(params_m)
             if loss_m > 1e10 or np.isnan(loss_m):
                 break

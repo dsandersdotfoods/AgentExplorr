@@ -453,7 +453,7 @@ class GELU(ActivationFunction):
         else:
             # Exact formulation using the error function
             # GELU(x) = 0.5 * x * (1 + erf(x / sqrt(2)))
-            from scipy.special import erf  # type: ignore[import-untyped]
+            from scipy.special import erf  # type: ignore[import-untyped,unused-ignore]
             return 0.5 * x * (1.0 + erf(x / np.sqrt(2.0)))
 
     def backward(self, x: np.ndarray) -> np.ndarray:
@@ -1018,7 +1018,7 @@ if __name__ == "__main__":
     large_logits = np.array([1000.0, 1001.0, 1002.0])
 
     print(f"\n  Logits: {large_logits}")
-    print(f"  exp(1000) would be: overflow (inf)")
+    print("  exp(1000) would be: overflow (inf)")
     print(f"  exp(1000 - 1002) = exp(-2) = {np.exp(-2.0):.6f}  (safe!)")
 
     sm = Softmax()

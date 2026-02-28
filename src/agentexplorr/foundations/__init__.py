@@ -70,28 +70,23 @@ from agentexplorr.foundations.loss_functions import (
 from agentexplorr.foundations.optimizers import SGD, Adam, AdamW, Momentum
 
 __all__ = [
-    # Activations
-    "ActivationFunction",
-    "relu",
-    "leaky_relu",
-    "sigmoid",
-    "tanh",
-    "gelu",
-    "softmax",
-    # Backpropagation
-    "ComputationalGraph",
-    "Node",
-    # Linear Algebra
-    "LinearAlgebraTeacher",
-    # Loss Functions
-    "LossFunction",
-    "mean_squared_error",
-    "cross_entropy_loss",
-    "binary_cross_entropy",
-    "huber_loss",
-    # Optimizers
     "SGD",
-    "Momentum",
+    "ActivationFunction",
     "Adam",
     "AdamW",
+    "ComputationalGraph",
+    "LinearAlgebraTeacher",
+    "LossFunction",
+    "Momentum",
+    "Node",
+    "binary_cross_entropy",
+    "cross_entropy_loss",
+    "gelu",
+    "huber_loss",
+    "leaky_relu",
+    "mean_squared_error",
+    "relu",
+    "sigmoid",
+    "softmax",
+    "tanh",
 ]

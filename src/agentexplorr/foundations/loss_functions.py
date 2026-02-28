@@ -354,14 +354,9 @@ class CrossEntropyLoss(LossFunction):
             Gradient array, same shape as y_pred.
         """
         n = y_pred.shape[0]
-        num_classes = y_pred.shape[1]
         y_true_int = y_true.astype(int)
 
-        if self.from_logits:
-            # softmax(logits) - one_hot(targets)
-            probs = self._softmax(y_pred)
-        else:
-            probs = y_pred.copy()
+        probs = self._softmax(y_pred) if self.from_logits else y_pred.copy()
 
         # Create one-hot encoding of targets
         one_hot = np.zeros_like(probs)
@@ -484,8 +479,6 @@ class BinaryCrossEntropy(LossFunction):
         Returns:
             Scalar binary cross-entropy loss.
         """
-        n = y_pred.shape[0]
-
         if self.from_logits:
             # Numerically stable binary cross-entropy from logits:
             #   loss = max(z, 0) - z*y + log(1 + exp(-|z|))
@@ -879,7 +872,7 @@ if __name__ == "__main__":
     print(f"    Sum of squared:        {np.sum(squared):.4f}")
     print(f"    MSE = sum / n:         {loss_val:.4f}")
 
-    print(f"\n  Gradient dL/d(y_pred) = (2/n)*(y_pred - y_true):")
+    print("\n  Gradient dL/d(y_pred) = (2/n)*(y_pred - y_true):")
     print(f"    {grad_val}")
     print("    Interpretation:")
     for i in range(len(y_pred_reg)):
@@ -922,7 +915,7 @@ if __name__ == "__main__":
     grad_val = ce.backward(logits, targets)
     print(f"\n  Cross-Entropy Loss: {loss_val:.4f}")
 
-    print(f"\n  Gradient (softmax - one_hot) / n:")
+    print("\n  Gradient (softmax - one_hot) / n:")
     for i in range(len(logits)):
         one_hot = np.zeros(3)
         one_hot[targets[i]] = 1.0
@@ -1003,7 +996,7 @@ if __name__ == "__main__":
 
     print(f"  Predictions:  {y_pred_bin}")
     print(f"  True labels:  {y_true_bin}")
-    print(f"\n  Per-sample losses:")
+    print("\n  Per-sample losses:")
     for i in range(len(y_pred_bin)):
         p = np.clip(y_pred_bin[i], 1e-12, 1.0 - 1e-12)
         sample_loss = -(y_true_bin[i] * np.log(p) + (1 - y_true_bin[i]) * np.log(1 - p))
@@ -1092,10 +1085,10 @@ if __name__ == "__main__":
     print(f"\n  MSE Loss:     {mse_loss_val:.4f}")
     print(f"  Huber Loss:   {huber_loss_val:.4f}")
     print(f"\n  MSE is {mse_loss_val/huber_loss_val:.1f}x larger than Huber!")
-    print(f"  The outlier (error=27) dominates MSE (27^2 = 729), but Huber")
-    print(f"  limits its contribution (delta * (27 - 0.5) = 26.5).")
+    print("  The outlier (error=27) dominates MSE (27^2 = 729), but Huber")
+    print("  limits its contribution (delta * (27 - 0.5) = 26.5).")
 
-    print(f"\n  Gradient comparison for the outlier (sample 3, error=27.0):")
+    print("\n  Gradient comparison for the outlier (sample 3, error=27.0):")
     print(f"    MSE  gradient: {mse_grad_val[3]:+.4f}  (HUGE! destabilizes training)")
     print(f"    Huber gradient: {huber_grad[3]:+.4f}  (capped at delta={huber.delta})")
 

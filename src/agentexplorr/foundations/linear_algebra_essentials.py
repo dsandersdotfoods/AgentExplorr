@@ -113,14 +113,14 @@ class LinearAlgebraTeacher:
         print(f"  theta = {theta_degrees:.2f} degrees (small = similar direction)")
 
         # Special cases
-        print(f"\n  --- Special Cases ---")
+        print("\n  --- Special Cases ---")
         c, d = np.array([1.0, 0.0]), np.array([0.0, 1.0])
         print(f"  Perpendicular: {c} . {d} = {np.dot(c, d)}  (= 0)")
         e, f = np.array([1.0, 0.0]), np.array([-1.0, 0.0])
         print(f"  Opposite:      {e} . {f} = {np.dot(e, f)}  (< 0)")
 
         # ML connection
-        print(f"\n  --- ML Connection: Attention-like Scoring ---")
+        print("\n  --- ML Connection: Attention-like Scoring ---")
         query = np.array([0.9, 0.1, 0.8, 0.2])
         key_relevant = np.array([0.85, 0.15, 0.75, 0.25])
         key_irrelevant = np.array([0.1, 0.9, 0.2, 0.7])
@@ -130,7 +130,7 @@ class LinearAlgebraTeacher:
         print(f"  key_irrelevant = {key_irrelevant}")
         print(f"  score(relevant)   = {np.dot(query, key_relevant):.4f}  (HIGH)")
         print(f"  score(irrelevant) = {np.dot(query, key_irrelevant):.4f}  (LOW)")
-        print(f"  -> Dot product naturally measures 'relevance'. This IS attention.")
+        print("  -> Dot product naturally measures 'relevance'. This IS attention.")
 
         logger.info("dot_product_demo_complete", dot_product=float(dot_numpy))
 
@@ -176,7 +176,7 @@ class LinearAlgebraTeacher:
               f"({B.shape[0]}x{B.shape[1]}) = ({C.shape[0]}x{C.shape[1]})")
 
         # Neural network interpretation
-        print(f"\n  --- Neural Network: y = W @ x + b ---")
+        print("\n  --- Neural Network: y = W @ x + b ---")
         W = np.array([[0.5, -0.3, 0.8], [-0.2, 0.7, 0.1]])
         b = np.array([0.1, -0.1])
         x = np.array([1.0, 0.5, 0.8])
@@ -188,10 +188,10 @@ class LinearAlgebraTeacher:
         print(f"  Neuron 1: {W[1]} . {x} + {b[1]} = {y[1]:.2f}")
 
         # Batch processing
-        print(f"\n  --- Batch Processing ---")
+        print("\n  --- Batch Processing ---")
         X_batch = np.array([[1.0, 0.5, 0.8], [0.2, 0.9, 0.4], [0.7, 0.3, 0.6]])
         Y_batch = X_batch @ W.T + b
-        print(f"  3 samples processed simultaneously:")
+        print("  3 samples processed simultaneously:")
         print(f"  Input  (3x3):\n{_indent(X_batch)}")
         print(f"  Output (3x2):\n{_indent(np.round(Y_batch, 4))}")
 
@@ -237,7 +237,7 @@ class LinearAlgebraTeacher:
         print(f"  L2: sqrt(9+16+0+1+4) = {l2:.4f}")
 
         # Regularization simulation
-        print(f"\n  --- L1 vs L2 Regularization ---")
+        print("\n  --- L1 vs L2 Regularization ---")
         w = np.array([0.5, -0.3, 0.01, -0.8, 0.02])
         lr, lam = 0.1, 0.5
 
@@ -248,12 +248,12 @@ class LinearAlgebraTeacher:
 
         print(f"  Starting weights: {w}")
         print(f"  After 1 L1 step:  {w_l1}")
-        print(f"    -> Small weights (0.01) moved as much as large ones!")
+        print("    -> Small weights (0.01) moved as much as large ones!")
         print(f"  After 1 L2 step:  {np.round(w_l2, 4)}")
-        print(f"    -> Small weights barely moved (proportional to size)")
+        print("    -> Small weights barely moved (proportional to size)")
 
         # Multiple steps
-        print(f"\n  --- After 10 Steps (regularization only) ---")
+        print("\n  --- After 10 Steps (regularization only) ---")
         w_l1_final, w_l2_final = w.copy(), w.copy()
         for _ in range(10):
             w_l1_final -= lr * np.sign(w_l1_final) * lam
@@ -264,8 +264,8 @@ class LinearAlgebraTeacher:
         print(f"  L2 result: {np.round(w_l2_final, 6)}")
         print(f"  L1 zeros: {np.sum(w_l1_final == 0)}/{len(w)} (sparse!)")
         print(f"  L2 zeros: {np.sum(w_l2_final == 0)}/{len(w)} (never zero)")
-        print(f"\n  KEY: L1 -> sparsity (feature selection)")
-        print(f"       L2 -> small weights (weight decay)")
+        print("\n  KEY: L1 -> sparsity (feature selection)")
+        print("       L2 -> small weights (weight decay)")
 
         logger.info("norms_demo_complete", l1=float(l1), l2=float(l2))
         return {"l1_norm": float(l1), "l2_norm": float(l2)}
@@ -317,7 +317,7 @@ class LinearAlgebraTeacher:
 
         # Simulated word embeddings
         # Dimensions loosely: [royalty, femininity, age, power]
-        print(f"\n  --- Simulated Word Embeddings ---")
+        print("\n  --- Simulated Word Embeddings ---")
         embeddings = {
             "king":   np.array([0.9, 0.1, 0.5, 0.9]),
             "queen":  np.array([0.9, 0.9, 0.5, 0.8]),
@@ -329,7 +329,7 @@ class LinearAlgebraTeacher:
         for word, emb in embeddings.items():
             print(f"    {word:8s} = {emb}")
 
-        print(f"\n  Pairwise similarities:")
+        print("\n  Pairwise similarities:")
         for w1, w2 in [("king","queen"), ("king","man"), ("queen","woman"),
                        ("king","apple"), ("man","woman")]:
             print(f"    sim({w1:8s}, {w2:8s}) = {cosine_sim(embeddings[w1], embeddings[w2]):.4f}")
@@ -337,7 +337,7 @@ class LinearAlgebraTeacher:
         # Word analogy
         analogy = embeddings["king"] - embeddings["man"] + embeddings["woman"]
         sim_analogy = cosine_sim(analogy, embeddings["queen"])
-        print(f"\n  --- Word Analogy: king - man + woman = ? ---")
+        print("\n  --- Word Analogy: king - man + woman = ? ---")
         print(f"  Result vector: {analogy}")
         print(f"  Closest to 'queen': cosine_sim = {sim_analogy:.4f}")
 
@@ -382,7 +382,7 @@ class LinearAlgebraTeacher:
         print(f"  Eigenvectors:\n{_indent(eigenvectors)}")
 
         # Verify A @ v = lambda * v
-        print(f"\n  --- Verification: A @ v = lambda * v ---")
+        print("\n  --- Verification: A @ v = lambda * v ---")
         for i in range(len(eigenvalues)):
             v = eigenvectors[:, i]
             lam = eigenvalues[i]
@@ -393,7 +393,7 @@ class LinearAlgebraTeacher:
             print(f"    lambda*v = [{lam_v[0]:.4f}, {lam_v[1]:.4f}]  Match: {np.allclose(Av, lam_v)}")
 
         # PCA on synthetic data
-        print(f"\n  --- PCA: Finding Principal Directions ---")
+        print("\n  --- PCA: Finding Principal Directions ---")
         np.random.seed(42)
         n_points = 200
         t = np.random.randn(n_points)
@@ -463,7 +463,7 @@ class LinearAlgebraTeacher:
         print(f"  Reconstruction error: {recon_err:.2e} (exact!)")
 
         # Low-rank approximation
-        print(f"\n  --- Low-Rank Approximation ---")
+        print("\n  --- Low-Rank Approximation ---")
         for k in range(1, len(sigma) + 1):
             A_k = U[:, :k] @ np.diag(sigma[:k]) @ Vt[:k, :]
             err = np.linalg.norm(A - A_k, 'fro')
@@ -473,10 +473,10 @@ class LinearAlgebraTeacher:
                   f"params={params_k} (vs {A.shape[0]*A.shape[1]} full)")
 
         # LoRA simulation
-        print(f"\n  --- LoRA Simulation ---")
+        print("\n  --- LoRA Simulation ---")
         d = 64
         np.random.seed(42)
-        W_pretrained = np.random.randn(d, d) * 0.1
+        w_pretrained = np.random.randn(d, d) * 0.1  # noqa: F841
 
         # Simulate low-rank weight update
         true_rank = 4
@@ -502,7 +502,7 @@ class LinearAlgebraTeacher:
         print(f"\n  At r={true_rank}, error -> 0! LoRA's insight: weight updates")
         print(f"  are low-rank, so B({d}x{true_rank}) @ A({true_rank}x{d}) suffices.")
         print(f"  Compression: {d*d/(2*d*true_rank):.1f}x fewer parameters!")
-        print(f"  Paper: https://arxiv.org/abs/2106.09685")
+        print("  Paper: https://arxiv.org/abs/2106.09685")
 
         logger.info("svd_and_lora_demo_complete", true_rank=true_rank)
         return {
@@ -542,7 +542,7 @@ class LinearAlgebraTeacher:
         # Scalar + array
         a = np.array([1.0, 2.0, 3.0])
         print(f"\n  {a} + 10 = {a + 10}")
-        print(f"  Shape: (3,) + () -> (3,)")
+        print("  Shape: (3,) + () -> (3,)")
 
         # Outer operation via broadcasting
         col = np.array([[1], [2], [3]])
@@ -551,7 +551,7 @@ class LinearAlgebraTeacher:
         print(f"\n  Column (3,1) + Row (1,3) -> outer sum (3,3):\n{_indent(outer)}")
 
         # ML Pattern: bias
-        print(f"\n  --- ML: Adding Bias to a Batch ---")
+        print("\n  --- ML: Adding Bias to a Batch ---")
         batch = np.array([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]])
         bias = np.array([0.1, 0.2, 0.3])
         result = batch + bias
@@ -561,16 +561,16 @@ class LinearAlgebraTeacher:
         print(f"  Shape: ({batch.shape}) + ({bias.shape},) -> same bias per sample")
 
         # ML Pattern: normalization
-        print(f"\n  --- ML: Feature-wise Normalization ---")
+        print("\n  --- ML: Feature-wise Normalization ---")
         mean = batch.mean(axis=0)
         std = batch.std(axis=0)
         normed = (batch - mean) / std
         print(f"  Means: {mean}, Stds: {np.round(std, 4)}")
         print(f"  Normalized:\n{_indent(np.round(normed, 4))}")
-        print(f"  Each column: mean ~0, std ~1")
+        print("  Each column: mean ~0, std ~1")
 
         # ML Pattern: pairwise distances
-        print(f"\n  --- ML: Pairwise Distances (No Loops!) ---")
+        print("\n  --- ML: Pairwise Distances (No Loops!) ---")
         pts_a = np.array([[0., 0.], [1., 0.], [0., 1.]])
         pts_b = np.array([[1., 1.], [2., 2.]])
         diff = pts_a[:, np.newaxis, :] - pts_b[np.newaxis, :, :]
@@ -578,14 +578,14 @@ class LinearAlgebraTeacher:
         print(f"  A: {pts_a.tolist()}")
         print(f"  B: {pts_b.tolist()}")
         print(f"  Distances (3x2):\n{_indent(np.round(dists, 4))}")
-        print(f"  Shape: (3,1,2) - (1,2,2) -> (3,2,2) -> sum -> (3,2)")
+        print("  Shape: (3,1,2) - (1,2,2) -> (3,2,2) -> sum -> (3,2)")
 
         # Common mistakes
-        print(f"\n  --- Common Mistakes ---")
-        print(f"  (3,4) + (3,)   -> ERROR (3 != 4)")
-        print(f"  (3,4) + (4,)   -> OK: (3,4)")
-        print(f"  (3,4) + (3,1)  -> OK: (3,4)")
-        print(f"  TIP: use np.newaxis to add dimensions for alignment")
+        print("\n  --- Common Mistakes ---")
+        print("  (3,4) + (3,)   -> ERROR (3 != 4)")
+        print("  (3,4) + (4,)   -> OK: (3,4)")
+        print("  (3,4) + (3,1)  -> OK: (3,4)")
+        print("  TIP: use np.newaxis to add dimensions for alignment")
 
         logger.info("broadcasting_demo_complete")
         return {"outer_product": outer, "batch_plus_bias": result,

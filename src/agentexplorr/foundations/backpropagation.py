@@ -154,7 +154,7 @@ LEARNING RESOURCES:
 from __future__ import annotations
 
 import math
-from typing import Callable, List, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
 
 import numpy as np
 
@@ -336,7 +336,7 @@ class Node:
 
     def __sub__(self, other: Node | float) -> Node:
         """Subtraction: a - b = a + (-b)."""
-        return self + (-other if isinstance(other, Node) else -other)
+        return self + (-other)
 
     def __rsub__(self, other: float) -> Node:
         """Handle float - Node."""
@@ -401,7 +401,7 @@ class Node:
             if isinstance(self.value, np.ndarray):
                 gate = (self.value > 0).astype(np.float64)
             else:
-                gate = 1.0 if self.value > 0 else 0.0
+                gate = 1.0 if float(self.value) > 0 else 0.0  # type: ignore[assignment]
             self.grad = self.grad + out.grad * gate
 
         out._backward = _backward
@@ -442,7 +442,7 @@ class Node:
             clipped = np.clip(self.value, -500, 500)
             s = 1.0 / (1.0 + np.exp(-clipped))
         else:
-            clipped = max(-500.0, min(500.0, self.value))
+            clipped = max(-500.0, min(500.0, float(self.value)))  # type: ignore[arg-type]
             s = 1.0 / (1.0 + math.exp(-clipped))
 
         out = Node(value=s, children=(self,), op="sigmoid")
@@ -470,10 +470,7 @@ class Node:
             less from vanishing gradients than sigmoid — but still suffers
             compared to ReLU.
         """
-        if isinstance(self.value, np.ndarray):
-            t = np.tanh(self.value)
-        else:
-            t = math.tanh(self.value)
+        t = np.tanh(self.value) if isinstance(self.value, np.ndarray) else math.tanh(self.value)
 
         out = Node(value=t, children=(self,), op="tanh")
 
@@ -778,7 +775,7 @@ class ComputationalGraph:
         w: np.ndarray,
         b: np.ndarray,
         activation: str = "none",
-    ) -> Tuple[Node, List[Node]]:
+    ) -> tuple[Node, list[Node]]:
         """Build a single linear layer: y = activation(W @ x + b).
 
         This is the fundamental building block of neural networks.
@@ -851,7 +848,7 @@ class ComputationalGraph:
         w2: np.ndarray,
         b2: np.ndarray,
         hidden_activation: str = "relu",
-    ) -> Tuple[Node, List[Node]]:
+    ) -> tuple[Node, list[Node]]:
         """Build a 2-layer neural network: y = W2 @ activation(W1 @ x + b1) + b2.
 
         ARCHITECTURE:
@@ -1014,7 +1011,7 @@ if __name__ == "__main__":
     graph.backward()
 
     print("\n    BACKWARD PASS (computing gradients right to left):")
-    print(f"      df/df = 1.0                           (seed)")
+    print("      df/df = 1.0                           (seed)")
     print(f"      df/db = 2 * b = 2 * {b.value:.1f} = {f.grad * 2 * b.value / (2 * b.value):.1f}  x  df/df = {b.grad:.1f}")
     print(f"      df/da = df/db * db/da = {b.grad:.1f} * 1 = {a.grad:.1f}    (addition passes gradient through)")
     print(f"      df/dx = df/da * da/dx = {a.grad:.1f} * 2 = {x.grad:.1f}   (multiplication by constant 2)")
@@ -1026,11 +1023,11 @@ if __name__ == "__main__":
     # f'(x) = 8x + 12
     # f'(1) = 20
     analytical = 8.0 * 1.0 + 12.0
-    print(f"\n    VERIFICATION (analytical):")
-    print(f"      f(x) = (2x+3)^2 = 4x^2 + 12x + 9")
-    print(f"      f'(x) = 8x + 12")
+    print("\n    VERIFICATION (analytical):")
+    print("      f(x) = (2x+3)^2 = 4x^2 + 12x + 9")
+    print("      f'(x) = 8x + 12")
     print(f"      f'(1) = 8(1) + 12 = {analytical:.1f}")
-    print(f"      Match: {abs(x.grad - analytical) < 1e-10}")
+    print(f"      Match: {abs(float(x.grad) - analytical) < 1e-10}")
 
     # Also verify with numerical gradient
     def f_func(x_val: float) -> float:
@@ -1111,7 +1108,7 @@ if __name__ == "__main__":
     neuron_graph.backward()
 
     print("\n    BACKWARD PASS (all partial derivatives):")
-    print(f"      dy/dy    = 1.0                       (seed)")
+    print("      dy/dy    = 1.0                       (seed)")
     sig_val = y.value
     sig_deriv = sig_val * (1.0 - sig_val)
     print(f"      dy/dz    = y*(1-y) = {sig_val:.6f} * {1 - sig_val:.6f} = {z.grad:.6f}")
@@ -1134,9 +1131,9 @@ if __name__ == "__main__":
     param_vals = [2.0, -1.0, 0.5, 0.5, -1.0]
     backprop_grads = [w1.grad, w2.grad, bias.grad, x1.grad, x2.grad]
 
-    for i, (name, bp_grad) in enumerate(zip(param_names, backprop_grads)):
+    for i, (name, bp_grad) in enumerate(zip(param_names, backprop_grads, strict=False)):
         num_g = numerical_gradient(neuron_func, param_vals, i)
-        match = abs(bp_grad - num_g) < 1e-5
+        match = abs(float(bp_grad) - num_g) < 1e-5
         print(f"      d/d{name:>2s}: backprop={bp_grad:>10.6f}  numerical={num_g:>10.6f}  match={match}")
 
     print(neuron_graph.visualize())
@@ -1210,7 +1207,7 @@ if __name__ == "__main__":
             theirs = torch_grads[name]
             match = abs(ours - theirs) < 1e-5
             all_match = all_match and match
-            print(f"      {name:<8} {ours:>12.6f} {theirs:>12.6f} {str(match):>8}")
+            print(f"      {name:<8} {ours:>12.6f} {theirs:>12.6f} {match!s:>8}")
 
         print(f"\n    ALL GRADIENTS MATCH: {all_match}")
 
@@ -1249,7 +1246,7 @@ if __name__ == "__main__":
         # Compare outputs
         our_output = y_node.value.flatten()
         torch_output = y_pt.detach().numpy().flatten()
-        print(f"\n      Output values:")
+        print("\n      Output values:")
         print(f"        Ours:    {our_output}")
         print(f"        PyTorch: {torch_output}")
         print(f"        Match:   {np.allclose(our_output, torch_output, atol=1e-6)}")
@@ -1261,22 +1258,22 @@ if __name__ == "__main__":
         w2_node_ref = params[2]
         b2_node_ref = params[3]
 
-        print(f"\n      W1 gradients:")
+        print("\n      W1 gradients:")
         print(f"        Ours:    \n{w1_node_ref.grad}")
         print(f"        PyTorch: \n{w1_pt.grad.numpy()}")
         print(f"        Match:   {np.allclose(w1_node_ref.grad, w1_pt.grad.numpy(), atol=1e-6)}")
 
-        print(f"\n      W2 gradients:")
+        print("\n      W2 gradients:")
         print(f"        Ours:    {w2_node_ref.grad}")
         print(f"        PyTorch: {w2_pt.grad.numpy()}")
         print(f"        Match:   {np.allclose(w2_node_ref.grad, w2_pt.grad.numpy(), atol=1e-6)}")
 
-        print(f"\n      b1 gradients:")
+        print("\n      b1 gradients:")
         print(f"        Ours:    {b1_node_ref.grad.flatten()}")
         print(f"        PyTorch: {b1_pt.grad.numpy().flatten()}")
         print(f"        Match:   {np.allclose(b1_node_ref.grad, b1_pt.grad.numpy(), atol=1e-6)}")
 
-        print(f"\n      b2 gradients:")
+        print("\n      b2 gradients:")
         print(f"        Ours:    {b2_node_ref.grad.flatten()}")
         print(f"        PyTorch: {b2_pt.grad.numpy().flatten()}")
         print(f"        Match:   {np.allclose(b2_node_ref.grad, b2_pt.grad.numpy(), atol=1e-6)}")
@@ -1311,7 +1308,7 @@ if __name__ == "__main__":
     for depth in [1, 2, 5, 10, 20, 50]:
         # Chain: sigmoid(sigmoid(sigmoid(...sigmoid(x)...)))
         node = Node(value=0.0, label="x")  # x=0 gives max sigmoid gradient
-        for i in range(depth):
+        for _i in range(depth):
             node = node.sigmoid()
         node.label = f"depth_{depth}"
 

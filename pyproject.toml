@@ -202,6 +202,10 @@ ignore = [
     "B008",   # do not perform function calls in argument defaults (needed for FastAPI/Pydantic)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# Math convention: uppercase variable names for matrices (A, B, W, X, etc.)
+"src/agentexplorr/foundations/*" = ["N806", "N812"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["agentexplorr"]
 
@@ -252,6 +256,14 @@ module = [
     "ipywidgets.*",
 ]
 ignore_missing_imports = true
+
+# Foundations module uses heavy numpy math — numpy's type stubs produce many
+# false positives with strict mode (ndarray generics, Any returns from np ops)
+[[tool.mypy.overrides]]
+module = "agentexplorr.foundations.*"
+disallow_untyped_defs = false
+warn_return_any = false
+disable_error_code = ["type-arg", "union-attr"]
 
 # Pytest — testing framework
 # LEARNING: https://docs.pytest.org/en/stable/
