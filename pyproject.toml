@@ -61,6 +61,8 @@ dependencies = [
     # HTTP & async
     "httpx>=0.27",
     "aiofiles>=24.0",
+    # Interactive CLI (arrow-key menus via prompt_toolkit)
+    "questionary>=2.0",
 ]
 
 # ---------------------------------------------------------------------------
