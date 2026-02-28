@@ -73,6 +73,7 @@ logger = get_logger(__name__)
 # Using dataclasses for configuration is a clean pattern in ML code.
 # They're like lightweight Pydantic models — less validation but simpler.
 
+
 @dataclass
 class DatasetConfig:
     """Configuration for dataset loading and processing.
@@ -229,6 +230,27 @@ class DatasetPreparer:
         )
 
     # ─── Public API ─────────────────────────────────────────────────
+
+    def format_instruction(self, example: dict[str, str]) -> str:
+        """Format a single instruction example into the Alpaca template.
+
+        Args:
+            example: Dictionary with "instruction", optional "input", and "output" keys.
+
+        Returns:
+            Formatted prompt string with ### Instruction:, optional ### Input:,
+            and ### Response: sections.
+        """
+        if example.get("input", "").strip():
+            return self.PROMPT_WITH_INPUT.format(
+                instruction=example["instruction"].strip(),
+                input=example["input"].strip(),
+                output=example["output"].strip(),
+            )
+        return self.PROMPT_WITHOUT_INPUT.format(
+            instruction=example["instruction"].strip(),
+            output=example["output"].strip(),
+        )
 
     def prepare(self, model_name: str) -> ProcessedDataset:
         """Run the full data preparation pipeline.
@@ -668,15 +690,11 @@ class DatasetPreparer:
         """
         dataset_path = Path(dataset_dir)
         if not dataset_path.exists():
-            raise FileNotFoundError(
-                f"Processed dataset not found at: {dataset_path}"
-            )
+            raise FileNotFoundError(f"Processed dataset not found at: {dataset_path}")
 
         train_dataset = Dataset.load_from_disk(str(dataset_path / "train"))
         val_dataset = Dataset.load_from_disk(str(dataset_path / "validation"))
-        tokenizer = AutoTokenizer.from_pretrained(
-            str(dataset_path / "tokenizer")
-        )
+        tokenizer = AutoTokenizer.from_pretrained(str(dataset_path / "tokenizer"))
 
         logger.info(
             "processed_dataset_loaded",

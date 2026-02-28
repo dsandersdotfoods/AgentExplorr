@@ -314,8 +314,7 @@ class ClusteringPipeline:
             n_clusters=n_clusters,
             n_noise=n_noise,
             cluster_sizes={
-                str(label): int(np.sum(self.labels == label))
-                for label in sorted(unique_labels)
+                str(label): int(np.sum(self.labels == label)) for label in sorted(unique_labels)
             },
         )
 
@@ -387,8 +386,7 @@ class ClusteringPipeline:
             "n_clusters": len(unique_labels),
             "n_noise_points": int(np.sum(self.labels == -1)),
             "cluster_sizes": {
-                int(label): int(np.sum(self.labels == label))
-                for label in sorted(unique_labels)
+                int(label): int(np.sum(self.labels == label)) for label in sorted(unique_labels)
             },
         }
 
@@ -419,6 +417,17 @@ class ClusteringPipeline:
         print("=" * 60)
 
         return self.results
+
+    def fit_on_iris(self) -> dict[str, Any]:
+        """Convenience method: load Iris dataset, fit clusters, and evaluate.
+
+        Returns:
+            Dictionary of evaluation metrics including "silhouette_score".
+        """
+        X, _y_true = self.load_data()
+        self.build_pipeline()
+        self.fit(X)
+        return self.evaluate(X)
 
     def elbow_method(
         self,
@@ -570,15 +579,13 @@ class ClusteringPipeline:
         logger.info(
             "pca_reduction_completed",
             n_components=n_components,
-            explained_variance_per_component=[
-                round(float(v), 4) for v in explained_var
-            ],
+            explained_variance_per_component=[round(float(v), 4) for v in explained_var],
             total_explained_variance=round(total_explained, 4),
         )
 
-        print(f"\nPCA: {n_components} components explain {total_explained*100:.1f}% of variance")
+        print(f"\nPCA: {n_components} components explain {total_explained * 100:.1f}% of variance")
         for i, var in enumerate(explained_var):
-            print(f"  PC{i+1}: {var*100:.1f}%")
+            print(f"  PC{i + 1}: {var * 100:.1f}%")
 
         return self.pca_data
 
@@ -642,6 +649,7 @@ if __name__ == "__main__":
         cluster_mask = labels == cluster_id
         true_labels_in_cluster = y_true[cluster_mask]
         from collections import Counter
+
         counts = Counter(true_labels_in_cluster)
         print(f"  Cluster {cluster_id}: {dict(counts)}")
 

@@ -3,6 +3,11 @@
 # =============================================================================
 # This workflow runs on every push and PR to ensure code quality.
 #
+# Jobs (all run in parallel):
+#   1. lint      — Ruff lint + format check
+#   2. typecheck — mypy strict mode
+#   3. test      — pytest across Python 3.11, 3.12, 3.13
+#
 # LEARNING RESOURCE:
 #   - GitHub Actions docs: https://docs.github.com/en/actions
 #   - VIDEO: "GitHub Actions Tutorial" — https://www.youtube.com/watch?v=R8_veQiYBjI
@@ -93,4 +98,12 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        run: uv run pytest -m "not slow and not integration and not gpu"
+        run: uv run pytest -m "not slow and not integration and not gpu" --tb=short
+
+      - name: Upload coverage
+        if: matrix.python-version == '3.12'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
+          retention-days: 7

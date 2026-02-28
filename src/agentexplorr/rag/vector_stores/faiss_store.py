@@ -66,7 +66,7 @@ PAPERS:
 
 from __future__ import annotations
 
-import pickle
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -236,8 +236,7 @@ class FAISSVectorStore:
 
         if self._dimension is None or self._dimension <= 0:
             raise ValueError(
-                f"Cannot create FAISS index: dimension must be positive, "
-                f"got {self._dimension}"
+                f"Cannot create FAISS index: dimension must be positive, got {self._dimension}"
             )
 
         if self._index_type == "flat_l2":
@@ -246,8 +245,7 @@ class FAISSVectorStore:
             self._index = faiss.IndexFlatIP(self._dimension)
         else:
             raise ValueError(
-                f"Unsupported index_type: {self._index_type!r}. "
-                f"Supported: 'flat_l2', 'flat_ip'"
+                f"Unsupported index_type: {self._index_type!r}. Supported: 'flat_l2', 'flat_ip'"
             )
 
         logger.debug(
@@ -296,7 +294,6 @@ class FAISSVectorStore:
             return []
 
         texts = [chunk.text for chunk in chunks]
-        ids = [chunk.chunk_id for chunk in chunks]
 
         logger.info(
             "adding_documents_to_faiss",
@@ -411,7 +408,7 @@ class FAISSVectorStore:
         # Parse results.
         # distances[0] and indices[0] are 1D arrays (one row per query; we have 1).
         results: list[SearchResult] = []
-        for distance, idx in zip(distances[0], indices[0]):
+        for distance, idx in zip(distances[0], indices[0], strict=False):
             # FAISS returns -1 for padding when there are fewer results than k
             if idx == -1:
                 continue
@@ -481,16 +478,16 @@ class FAISSVectorStore:
         index_path = save_dir / "index.faiss"
         faiss.write_index(self._index, str(index_path))
 
-        # Save the metadata
-        metadata_path = save_dir / "metadata.pkl"
+        # Save the metadata as JSON (safer than pickle — no arbitrary code execution)
+        metadata_path = save_dir / "metadata.json"
         metadata = {
             "documents": self._documents,
             "id_to_position": self._id_to_position,
             "dimension": self._dimension,
             "index_type": self._index_type,
         }
-        with open(metadata_path, "wb") as f:
-            pickle.dump(metadata, f)
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f)
 
         logger.info(
             "faiss_index_saved",
@@ -520,16 +517,17 @@ class FAISSVectorStore:
 
         load_dir = Path(directory).resolve()
         index_path = load_dir / "index.faiss"
-        metadata_path = load_dir / "metadata.pkl"
+        metadata_path = load_dir / "metadata.json"
 
         if not index_path.exists():
             raise FileNotFoundError(f"FAISS index not found: {index_path}")
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata not found: {metadata_path}")
 
-        # Load metadata first to get dimension and index_type
-        with open(metadata_path, "rb") as f:
-            metadata = pickle.load(f)
+        # Load metadata first to get dimension and index_type (JSON is safe
+        # unlike pickle, which can execute arbitrary code during deserialization)
+        with open(metadata_path) as f:
+            metadata = json.load(f)
 
         # Create a new instance with the saved config
         store = cls(

@@ -38,6 +38,7 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
+import re
 import sqlite3
 from pathlib import Path
 
@@ -60,15 +61,17 @@ server = FastMCP(
 DEFAULT_DB_PATH = Path("data/sample.db")
 
 
-def _get_connection(db_path: str | None = None) -> sqlite3.Connection:
+def _get_connection(db_path: str | None = None, *, read_only: bool = False) -> sqlite3.Connection:
     """Get a SQLite connection with safety settings.
 
     SAFETY SETTINGS EXPLAINED:
       - row_factory = sqlite3.Row → results are dict-like (access by column name)
       - timeout = 5 → don't hang forever on locked databases
+      - read_only mode → opens database as read-only via URI, preventing any writes
 
     Args:
         db_path: Path to SQLite database file. Uses default if None.
+        read_only: If True, open in read-only mode (blocks all writes at DB level).
 
     Returns:
         sqlite3.Connection with safety settings applied.
@@ -83,9 +86,24 @@ def _get_connection(db_path: str | None = None) -> sqlite3.Connection:
         _create_sample_data(conn)
         conn.close()
 
-    conn = sqlite3.Connection(str(path), timeout=5)
+    if read_only:
+        # Open in read-only mode via URI — the database engine itself blocks writes
+        uri = f"file:{path.resolve()}?mode=ro"
+        conn = sqlite3.connect(uri, uri=True, timeout=5)
+    else:
+        conn = sqlite3.connect(str(path), timeout=5)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+def _get_valid_tables(conn: sqlite3.Connection) -> set[str]:
+    """Get the set of actual table names from the database.
+
+    Used to validate table names before interpolation into SQL,
+    preventing SQL injection via crafted table names.
+    """
+    cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
+    return {row["name"] for row in cursor.fetchall()}
 
 
 def _create_sample_data(conn: sqlite3.Connection) -> None:
@@ -157,8 +175,17 @@ def _is_read_only(query: str) -> bool:
 
     # Block dangerous operations
     dangerous_keywords = [
-        "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "CREATE",
-        "TRUNCATE", "REPLACE", "GRANT", "REVOKE", "ATTACH",
+        "INSERT",
+        "UPDATE",
+        "DELETE",
+        "DROP",
+        "ALTER",
+        "CREATE",
+        "TRUNCATE",
+        "REPLACE",
+        "GRANT",
+        "REVOKE",
+        "ATTACH",
     ]
 
     # Check if query starts with SELECT or WITH (CTEs)
@@ -173,13 +200,8 @@ def _is_read_only(query: str) -> bool:
         if len(parts) > 1:
             return False
 
-    # Check for dangerous keywords (simple heuristic)
-    for keyword in dangerous_keywords:
-        # Look for keyword as a word boundary
-        if f" {keyword} " in f" {stripped} ":
-            return False
-
-    return True
+    # Check for dangerous keywords using regex word boundaries
+    return all(not re.search(rf"\b{keyword}\b", stripped) for keyword in dangerous_keywords)
 
 
 # ---------------------------------------------------------------------------
@@ -194,12 +216,9 @@ def list_tables(db_path: str | None = None) -> str:
     Returns:
         Names and row counts of all tables.
     """
-    conn = _get_connection(db_path)
+    conn = _get_connection(db_path, read_only=True)
     try:
-        cursor = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        )
-        tables = [row["name"] for row in cursor.fetchall()]
+        tables = sorted(_get_valid_tables(conn))
 
         if not tables:
             return "No tables found in the database."
@@ -224,14 +243,19 @@ def describe_table(table_name: str, db_path: str | None = None) -> str:
     Returns:
         Table schema with column names, types, and constraints.
     """
-    conn = _get_connection(db_path)
+    conn = _get_connection(db_path, read_only=True)
     try:
+        # Validate table_name against actual tables to prevent SQL injection
+        valid_tables = _get_valid_tables(conn)
+        if table_name not in valid_tables:
+            return f"Table '{table_name}' not found."
+
         # PRAGMA table_info returns column metadata
         cursor = conn.execute(f"PRAGMA table_info([{table_name}])")
         columns = cursor.fetchall()
 
         if not columns:
-            return f"Table '{table_name}' not found."
+            return f"Table '{table_name}' has no columns."
 
         lines = [f"Schema for '{table_name}':"]
         lines.append(f"  {'Column':<20} {'Type':<15} {'Nullable':<10} {'PK'}")
@@ -261,9 +285,13 @@ def run_query(query: str, db_path: str | None = None) -> str:
     """
     # Security check: only allow SELECT queries
     if not _is_read_only(query):
-        return "Error: Only SELECT queries are allowed. Modification queries are blocked for safety."
+        return (
+            "Error: Only SELECT queries are allowed. Modification queries are blocked for safety."
+        )
 
-    conn = _get_connection(db_path)
+    # Defense-in-depth: open in read-only mode so even if _is_read_only()
+    # is bypassed, the database engine itself blocks writes
+    conn = _get_connection(db_path, read_only=True)
     try:
         logger.info("executing_query", query=query[:200])
         cursor = conn.execute(query)
@@ -289,8 +317,7 @@ def run_query(query: str, db_path: str | None = None) -> str:
         header = " | ".join(col.ljust(widths[i]) for i, col in enumerate(columns))
         separator = "-+-".join("-" * w for w in widths)
         data_lines = [
-            " | ".join(val.ljust(widths[i]) for i, val in enumerate(row))
-            for row in str_rows
+            " | ".join(val.ljust(widths[i]) for i, val in enumerate(row)) for row in str_rows
         ]
 
         result = f"{header}\n{separator}\n" + "\n".join(data_lines)

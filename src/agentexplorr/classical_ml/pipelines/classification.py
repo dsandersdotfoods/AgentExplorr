@@ -278,15 +278,18 @@ class ClassificationPipeline:
         self.pipeline = Pipeline(
             [
                 ("preprocessor", preprocessor),
-                ("classifier", RandomForestClassifier(
-                    n_estimators=n_estimators,
-                    max_depth=max_depth,
-                    random_state=self.random_state,
-                    # n_jobs=-1 uses all CPU cores for parallel tree training.
-                    # Random Forest is "embarrassingly parallel" — each tree
-                    # is independent, so we can train them simultaneously.
-                    n_jobs=-1,
-                )),
+                (
+                    "classifier",
+                    RandomForestClassifier(
+                        n_estimators=n_estimators,
+                        max_depth=max_depth,
+                        random_state=self.random_state,
+                        # n_jobs=-1 uses all CPU cores for parallel tree training.
+                        # Random Forest is "embarrassingly parallel" — each tree
+                        # is independent, so we can train them simultaneously.
+                        n_jobs=-1,
+                    ),
+                ),
             ]
         )
 
@@ -452,11 +455,7 @@ class ClassificationPipeline:
             Array of predicted class labels.
         """
         # Prefer the tuned model if available
-        model = (
-            self.grid_search.best_estimator_
-            if self.grid_search is not None
-            else self.pipeline
-        )
+        model = self.grid_search.best_estimator_ if self.grid_search is not None else self.pipeline
         if model is None:
             raise RuntimeError("Pipeline not fitted. Call fit() or tune_hyperparameters() first.")
 
@@ -566,6 +565,20 @@ class ClassificationPipeline:
 
         return self.results
 
+    def train_on_wine(self, test_size: float = 0.2) -> dict[str, Any]:
+        """Convenience method: load Wine dataset, train, and evaluate in one call.
+
+        Args:
+            test_size: Fraction of data for testing.
+
+        Returns:
+            Dictionary of evaluation metrics including "accuracy".
+        """
+        X_train, X_test, y_train, y_test = self.load_data(test_size=test_size)
+        self.build_pipeline()
+        self.fit(X_train, y_train)
+        return self.evaluate(X_test, y_test)
+
     def get_feature_importances(self) -> dict[str, float]:
         """Extract feature importances from the Random Forest.
 
@@ -593,11 +606,7 @@ class ClassificationPipeline:
             RuntimeError: If the pipeline hasn't been fitted yet.
         """
         # Get the fitted model (from tuning or direct fit)
-        model = (
-            self.grid_search.best_estimator_
-            if self.grid_search is not None
-            else self.pipeline
-        )
+        model = self.grid_search.best_estimator_ if self.grid_search is not None else self.pipeline
         if model is None:
             raise RuntimeError("Pipeline not fitted. Call fit() or tune_hyperparameters() first.")
 

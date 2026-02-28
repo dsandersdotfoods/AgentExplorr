@@ -67,32 +67,30 @@ DEFAULT_TIMEOUT: float = 15.0
 
 # User-Agent header: Be honest about what we are. Some sites block
 # requests without a User-Agent, so we include one.
-USER_AGENT: str = (
-    "AgentExplorr/0.1 (AI Research Tool; +https://github.com/agentexplorr) "
-    "httpx/0.27"
-)
+USER_AGENT: str = "AgentExplorr/0.1 (AI Research Tool; +https://github.com/agentexplorr) httpx/0.27"
 
 # HTML tags that contain noise rather than content.
 # We remove these entirely before extracting text.
 NOISE_TAGS: set[str] = {
-    "script",   # JavaScript code
-    "style",    # CSS rules
-    "nav",      # Navigation menus
-    "footer",   # Footer boilerplate
-    "header",   # Header/banner areas (often just logos/nav)
-    "aside",    # Sidebars, ads
-    "form",     # Forms (login, search boxes)
-    "noscript", # No-JS fallback content
-    "iframe",   # Embedded frames
-    "svg",      # SVG graphics
-    "meta",     # Meta tags
-    "link",     # Link tags (stylesheets etc.)
+    "script",  # JavaScript code
+    "style",  # CSS rules
+    "nav",  # Navigation menus
+    "footer",  # Footer boilerplate
+    "header",  # Header/banner areas (often just logos/nav)
+    "aside",  # Sidebars, ads
+    "form",  # Forms (login, search boxes)
+    "noscript",  # No-JS fallback content
+    "iframe",  # Embedded frames
+    "svg",  # SVG graphics
+    "meta",  # Meta tags
+    "link",  # Link tags (stylesheets etc.)
 }
 
 
 # ---------------------------------------------------------------------------
 # Internal scraping logic
 # ---------------------------------------------------------------------------
+
 
 def _validate_url(url: str) -> str:
     """Validate and normalize a URL.
@@ -125,23 +123,52 @@ def _validate_url(url: str) -> str:
     # Only allow HTTP and HTTPS
     if parsed.scheme not in ("http", "https"):
         raise ValueError(
-            f"Unsupported URL scheme: '{parsed.scheme}'. "
-            "Only http:// and https:// are allowed."
+            f"Unsupported URL scheme: '{parsed.scheme}'. Only http:// and https:// are allowed."
         )
 
     # Must have a hostname
     if not parsed.hostname:
         raise ValueError(f"Invalid URL (no hostname): {url}")
 
-    # Basic SSRF prevention: block common private/internal addresses.
-    # NOTE: This is NOT exhaustive. A production system should use a
-    # proper SSRF prevention library or network-level controls.
-    blocked_hosts = {"localhost", "127.0.0.1", "0.0.0.0", "[::1]"}
-    if parsed.hostname.lower() in blocked_hosts:
+    # SSRF prevention: block private, loopback, link-local, and reserved IPs.
+    # This prevents agents from accessing internal services, cloud metadata
+    # endpoints (169.254.169.254), and other local resources.
+    import ipaddress
+    import socket
+
+    hostname = parsed.hostname.lower()
+
+    # Block known local hostnames
+    blocked_hosts = {"localhost", "0.0.0.0", "metadata.google.internal"}
+    if hostname in blocked_hosts:
         raise ValueError(
-            f"Blocked URL: '{parsed.hostname}' is a local address. "
+            f"Blocked URL: '{hostname}' is a local/reserved address. "
             "Scraping local addresses is not allowed for security reasons."
         )
+
+    # Resolve hostname and check if the IP is private/reserved
+    try:
+        addr = ipaddress.ip_address(hostname.strip("[]"))
+        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            raise ValueError(
+                f"Blocked URL: '{hostname}' resolves to a private/reserved address. "
+                "Scraping internal addresses is not allowed for security reasons."
+            )
+    except ValueError as ve:
+        if "Blocked URL" in str(ve):
+            raise
+        # Not a raw IP — resolve the hostname via DNS
+        try:
+            resolved = socket.getaddrinfo(hostname, None)
+            for _, _, _, _, sockaddr in resolved:
+                addr = ipaddress.ip_address(sockaddr[0])
+                if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+                    raise ValueError(
+                        f"Blocked URL: '{hostname}' resolves to {addr}, a private/reserved address. "
+                        "Scraping internal addresses is not allowed for security reasons."
+                    ) from None
+        except socket.gaierror:
+            pass  # DNS resolution failed — let httpx handle the error
 
     return url
 
@@ -173,8 +200,7 @@ def _extract_text(html: str, max_chars: int = DEFAULT_MAX_CHARS) -> str:
         from bs4 import BeautifulSoup
     except ImportError as exc:
         raise ImportError(
-            "beautifulsoup4 is required for web scraping. "
-            "Install it with: uv sync --extra agents"
+            "beautifulsoup4 is required for web scraping. Install it with: uv sync --extra agents"
         ) from exc
 
     # Parse HTML using Python's built-in parser (no extra dependencies).
@@ -189,6 +215,7 @@ def _extract_text(html: str, max_chars: int = DEFAULT_MAX_CHARS) -> str:
 
     # Also remove HTML comments (often contain templating artifacts)
     from bs4 import Comment
+
     for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
         comment.extract()
 
@@ -246,8 +273,7 @@ def _fetch_url(url: str, timeout: float = DEFAULT_TIMEOUT) -> str:
         import httpx
     except ImportError as exc:
         raise ImportError(
-            "httpx is required for web scraping. "
-            "Install it with: uv sync --extra agents"
+            "httpx is required for web scraping. Install it with: uv sync --extra agents"
         ) from exc
 
     try:
@@ -256,7 +282,7 @@ def _fetch_url(url: str, timeout: float = DEFAULT_TIMEOUT) -> str:
         with httpx.Client(
             timeout=timeout,
             follow_redirects=True,  # Follow HTTP 301/302 redirects
-            max_redirects=5,        # But not too many (prevent redirect loops)
+            max_redirects=5,  # But not too many (prevent redirect loops)
             headers={
                 "User-Agent": USER_AGENT,
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -268,21 +294,21 @@ def _fetch_url(url: str, timeout: float = DEFAULT_TIMEOUT) -> str:
             response.raise_for_status()
             return response.text
 
-    except httpx.TimeoutException:
+    except httpx.TimeoutException as e:
         raise RuntimeError(
             f"Request timed out after {timeout}s for URL: {url}. "
             "The server may be slow or unresponsive."
-        )
+        ) from e
     except httpx.HTTPStatusError as e:
         raise RuntimeError(
             f"HTTP {e.response.status_code} error for URL: {url}. "
             f"Server responded with: {e.response.reason_phrase}"
-        )
+        ) from e
     except httpx.RequestError as e:
         raise RuntimeError(
             f"Failed to fetch URL: {url}. Error: {e}. "
             "Check your internet connection and that the URL is valid."
-        )
+        ) from e
 
 
 def scrape_url(
@@ -317,6 +343,7 @@ def scrape_url(
     title = ""
     try:
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(html, "html.parser")
         title_tag = soup.find("title")
         if title_tag and title_tag.string:
@@ -344,6 +371,7 @@ def scrape_url(
 # ---------------------------------------------------------------------------
 # LangChain Tool (used by agents)
 # ---------------------------------------------------------------------------
+
 
 @tool
 def web_scrape(url: str) -> str:

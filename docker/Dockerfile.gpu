@@ -46,4 +46,8 @@ ENV PYTHONPATH="/app/src:$PYTHONPATH"
 # Verify CUDA is accessible
 RUN python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')" || true
 
+# Non-root user for security
+RUN useradd --create-home appuser
+USER appuser
+
 CMD ["python", "-m", "agentexplorr"]

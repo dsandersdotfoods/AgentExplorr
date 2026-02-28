@@ -18,6 +18,7 @@ import argparse
 import contextlib
 import sys
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import questionary
 from rich.console import Console
@@ -69,6 +70,7 @@ def interactive_mode() -> None:
         "AI Agents           — ReAct, Tool-Calling, Multi-Agent": _explore_agents,
         "RAG Pipeline        — chunking, retrieval, generation": _explore_rag,
         "Prompt Engineering  — CoT, few-shot, templates": _explore_prompts,
+        "Classical ML        — classification, regression, clustering": _explore_classical_ml,
         "Calculator          — evaluate math expressions": _interactive_calc,
         "Benchmarks          — agent evaluation questions": _show_benchmarks,
         "Project Info        — modules, tech stack, architecture": _show_project_info,
@@ -236,6 +238,8 @@ def _explore_agents() -> None:
                 "Agent overview",
                 "Available tools",
                 "Architecture diagram",
+                "Try calculator tool",
+                "Try memory system",
                 BACK,
             ],
         )
@@ -251,16 +255,22 @@ def _explore_agents() -> None:
             table.add_column("Complexity")
 
             table.add_row(
-                "ToolAgent", "Direct tool dispatch",
-                "Simple queries (1-2 tool calls)", "[green]Low[/green]",
+                "ToolAgent",
+                "Direct tool dispatch",
+                "Simple queries (1-2 tool calls)",
+                "[green]Low[/green]",
             )
             table.add_row(
-                "ReActAgent", "Think -> Act -> Observe loop",
-                "Multi-step research tasks", "[yellow]Medium[/yellow]",
+                "ReActAgent",
+                "Think -> Act -> Observe loop",
+                "Multi-step research tasks",
+                "[yellow]Medium[/yellow]",
             )
             table.add_row(
-                "MultiAgentSupervisor", "Supervisor + specialists",
-                "Complex tasks needing diverse skills", "[red]High[/red]",
+                "MultiAgentSupervisor",
+                "Supervisor + specialists",
+                "Complex tasks needing diverse skills",
+                "[red]High[/red]",
             )
             console.print(table)
 
@@ -314,7 +324,84 @@ ReAct Agent Loop:
               └─────────┘"""
             console.print(Panel(diagram, title="ReAct Agent Architecture", border_style="cyan"))
 
+        elif choice == "Try calculator tool":
+            _try_calculator_tool()
+
+        elif choice == "Try memory system":
+            _try_memory_system()
+
         _pause()
+
+
+def _try_calculator_tool() -> None:
+    """Demonstrate the calculator tool like an agent would use it."""
+    from agentexplorr.agents.tools.calculator import safe_evaluate
+
+    console.print()
+    queries = [
+        ("What is 15% of 280?", "280 * 0.15"),
+        ("Square root of 144 plus pi", "sqrt(144) + pi"),
+        ("Compound interest: $1000 at 5% for 10 years", "1000 * (1 + 0.05)**10"),
+        ("Factorial of 7 divided by 2", "factorial(7) / 2"),
+    ]
+
+    table = Table(title="Calculator Tool Demo — Agent-style", border_style="cyan")
+    table.add_column("Query", style="bold")
+    table.add_column("Tool call")
+    table.add_column("Result", style="green", justify="right")
+
+    for question, expr in queries:
+        result = safe_evaluate(expr)
+        table.add_row(question, f"calculator({expr!r})", str(round(result, 4)))
+
+    console.print(table)
+    console.print(
+        "[dim]The agent translates natural language into tool calls, "
+        "then incorporates results into its response.[/dim]"
+    )
+
+
+def _try_memory_system() -> None:
+    """Demonstrate the conversation memory system."""
+    from agentexplorr.agents.memory import ConversationMemory
+
+    console.print()
+    memory = ConversationMemory(max_messages=10)
+    memory.add_user_message("What is machine learning?")
+    memory.add_assistant_message(
+        "Machine learning is a subset of AI where models learn patterns from data."
+    )
+    memory.add_user_message("How does supervised learning work?")
+    memory.add_assistant_message(
+        "Supervised learning uses labeled data — input/output pairs — to train "
+        "a model to predict outputs for new inputs."
+    )
+    memory.add_user_message("Give me an example.")
+    memory.add_assistant_message(
+        "Email spam detection: the model sees thousands of emails labeled "
+        "'spam' or 'not spam' and learns to classify new emails."
+    )
+
+    console.print(
+        Panel(
+            memory.get_context_string(),
+            title="Conversation Memory (3 turns)",
+            border_style="cyan",
+        )
+    )
+
+    results = memory.search("supervised")
+    console.print(f"\n  [bold]Search for 'supervised':[/bold] found {len(results)} messages")
+    for msg in results:
+        console.print(f"    [{msg.role}] {msg.content[:80]}...")
+
+    console.print(
+        Panel(
+            "Rolling window  |  Searchable  |  JSON-serializable  |  LangChain-exportable",
+            title="Memory features",
+            border_style="green",
+        )
+    )
 
 
 # ── RAG Pipeline ────────────────────────────────────────────────────────
@@ -329,6 +416,7 @@ def _explore_rag() -> None:
                 "Pipeline overview",
                 "Chunking strategies",
                 "Vector store comparison",
+                "Try chunking demo",
                 BACK,
             ],
         )
@@ -365,15 +453,18 @@ RAG Flow:
             table.add_column("Best for")
 
             table.add_row(
-                "RecursiveChunker", "Split by paragraphs, then sentences, then chars",
+                "RecursiveChunker",
+                "Split by paragraphs, then sentences, then chars",
                 "General purpose (default)",
             )
             table.add_row(
-                "FixedChunker", "Fixed character windows with overlap",
+                "FixedChunker",
+                "Fixed character windows with overlap",
                 "Uniform chunk sizes",
             )
             table.add_row(
-                "SemanticChunker", "Split at topic boundaries using embeddings",
+                "SemanticChunker",
+                "Split at topic boundaries using embeddings",
                 "Topic-coherent chunks",
             )
             console.print(table)
@@ -400,7 +491,91 @@ RAG Flow:
                 )
             )
 
+        elif choice == "Try chunking demo":
+            _try_chunking_demo()
+
         _pause()
+
+
+def _try_chunking_demo() -> None:
+    """Demonstrate text chunking with real content."""
+    from agentexplorr.rag.chunking import FixedSizeChunker, RecursiveChunker
+
+    console.print()
+
+    sample_text = (
+        "Machine learning is a branch of artificial intelligence that focuses on "
+        "building systems that learn from data. Unlike traditional programming where "
+        "you write explicit rules, ML algorithms discover patterns automatically.\n\n"
+        "There are three main types of machine learning:\n\n"
+        "Supervised Learning uses labeled training data — input/output pairs — to "
+        "learn a mapping function. Common algorithms include linear regression, "
+        "decision trees, and neural networks. Applications include spam detection, "
+        "image classification, and medical diagnosis.\n\n"
+        "Unsupervised Learning works with unlabeled data to discover hidden structure. "
+        "Clustering algorithms like K-Means group similar data points together. "
+        "Dimensionality reduction techniques like PCA compress data while preserving "
+        "important information.\n\n"
+        "Reinforcement Learning trains agents through trial and error. The agent takes "
+        "actions in an environment and receives rewards or penalties. This approach "
+        "powers game-playing AI, robotics, and recommendation systems."
+    )
+
+    console.print(
+        Panel(
+            f"[dim]{sample_text[:200]}...[/dim]",
+            title=f"Sample text ({len(sample_text)} chars)",
+            border_style="dim",
+        )
+    )
+
+    # Fixed-size chunking
+    fixed = FixedSizeChunker(chunk_size=200, overlap=30)
+    fixed_chunks = fixed.chunk(sample_text)
+
+    # Recursive chunking
+    recursive = RecursiveChunker(chunk_size=200, overlap=30)
+    recursive_chunks = recursive.chunk(sample_text)
+
+    table = Table(title="Chunking Comparison", border_style="cyan")
+    table.add_column("Strategy", style="bold")
+    table.add_column("Chunks", justify="center")
+    table.add_column("Avg size", justify="center")
+    table.add_column("First chunk preview")
+
+    def _avg(chunks: list) -> int:
+        return sum(len(c.text) for c in chunks) // max(len(chunks), 1)
+
+    table.add_row(
+        "FixedSize (200, overlap=30)",
+        str(len(fixed_chunks)),
+        f"{_avg(fixed_chunks)} chars",
+        fixed_chunks[0].text[:60] + "..." if fixed_chunks else "—",
+    )
+    table.add_row(
+        "Recursive (200, overlap=30)",
+        str(len(recursive_chunks)),
+        f"{_avg(recursive_chunks)} chars",
+        recursive_chunks[0].text[:60] + "..." if recursive_chunks else "—",
+    )
+
+    console.print(table)
+
+    # Show all recursive chunks
+    console.print("\n  [bold]Recursive chunks detail:[/bold]")
+    for i, chunk in enumerate(recursive_chunks):
+        preview = chunk.text[:80].replace("\n", " ")
+        console.print(f"    [dim]#{i + 1}[/dim] ({len(chunk.text)} chars) {preview}...")
+
+    console.print(
+        Panel(
+            "[bold]Recursive chunking[/bold] preserves paragraph boundaries, "
+            "producing more coherent chunks than fixed-size splitting.\n"
+            "This directly improves retrieval quality in RAG pipelines.",
+            title="Why recursive chunking wins",
+            border_style="green",
+        )
+    )
 
 
 # ── Prompt Engineering ──────────────────────────────────────────────────
@@ -459,7 +634,7 @@ def _explore_prompts() -> None:
 
             table.add_row(
                 "Zero-shot CoT",
-                "\"Let's think step by step\"",
+                '"Let\'s think step by step"',
                 "Math, reasoning (no examples needed)",
             )
             table.add_row(
@@ -485,6 +660,135 @@ def _explore_prompts() -> None:
             console.print(table)
 
         _pause()
+
+
+# ── Classical ML ────────────────────────────────────────────────────────
+
+
+def _explore_classical_ml() -> None:
+    """Interactive explorer for classical ML pipelines."""
+    while True:
+        choice = _select(
+            "Classical ML",
+            [
+                "Pipeline overview",
+                "Run classification demo (Wine dataset)",
+                "Run clustering demo (Iris dataset)",
+                BACK,
+            ],
+        )
+        if choice is None or choice == BACK:
+            return
+
+        if choice == "Pipeline overview":
+            console.print()
+            table = Table(title="ML Pipeline Types", border_style="cyan")
+            table.add_column("Pipeline", style="bold")
+            table.add_column("Task")
+            table.add_column("Algorithm")
+            table.add_column("Dataset")
+
+            table.add_row(
+                "ClassificationPipeline",
+                "Predict discrete labels",
+                "Random Forest + GridSearchCV",
+                "Wine Quality (178 samples)",
+            )
+            table.add_row(
+                "RegressionPipeline",
+                "Predict continuous values",
+                "Ridge / Lasso / ElasticNet",
+                "California Housing (20K samples)",
+            )
+            table.add_row(
+                "ClusteringPipeline",
+                "Discover groups",
+                "KMeans / DBSCAN + PCA",
+                "Iris (150 samples)",
+            )
+            console.print(table)
+
+            console.print(
+                Panel(
+                    "Each pipeline includes: [bold]preprocessing[/bold] (StandardScaler, "
+                    "OneHotEncoder) -> [bold]model[/bold] -> [bold]evaluation[/bold] "
+                    "(accuracy, R², silhouette score).\n"
+                    "All wrapped in sklearn's Pipeline to prevent data leakage.",
+                    title="Architecture",
+                    border_style="green",
+                )
+            )
+
+        elif choice == "Run classification demo (Wine dataset)":
+            _try_classification()
+
+        elif choice == "Run clustering demo (Iris dataset)":
+            _try_clustering()
+
+        _pause()
+
+
+def _try_classification() -> None:
+    """Run a live classification pipeline on the Wine dataset."""
+    from agentexplorr.classical_ml.pipelines.classification import ClassificationPipeline
+
+    console.print()
+    console.print("  [bold]Running classification pipeline on Wine dataset...[/bold]")
+
+    pipeline = ClassificationPipeline()
+    metrics = pipeline.train_on_wine()
+
+    table = Table(title="Classification Results (Wine Dataset)", border_style="cyan")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="green", justify="right")
+
+    table.add_row("Accuracy", f"{metrics['accuracy']:.4f}")
+    table.add_row("Precision", f"{metrics['precision']:.4f}")
+    table.add_row("Recall", f"{metrics['recall']:.4f}")
+    table.add_row("F1 Score", f"{metrics['f1_score']:.4f}")
+
+    console.print(table)
+
+    # Feature importances
+    importances = pipeline.get_feature_importances()
+    console.print("\n  [bold]Top 5 feature importances:[/bold]")
+    for name, score in list(importances.items())[:5]:
+        bar = "[green]" + "#" * int(score * 40) + "[/green]"
+        console.print(f"    {name:<25} {score:.4f} {bar}")
+
+
+def _try_clustering() -> None:
+    """Run a live clustering pipeline on the Iris dataset."""
+    from agentexplorr.classical_ml.pipelines.clustering import ClusteringPipeline
+
+    console.print()
+    console.print("  [bold]Running KMeans clustering on Iris dataset (K=3)...[/bold]")
+
+    pipeline = ClusteringPipeline(n_clusters=3)
+    metrics = pipeline.fit_on_iris()
+
+    table = Table(title="Clustering Results (Iris Dataset)", border_style="cyan")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="green", justify="right")
+
+    table.add_row("Silhouette Score", f"{metrics['silhouette_score']:.4f}")
+    table.add_row("Clusters Found", str(metrics["n_clusters"]))
+    table.add_row("Noise Points", str(metrics["n_noise_points"]))
+
+    for label, size in metrics.get("cluster_sizes", {}).items():
+        table.add_row(f"  Cluster {label} size", str(size))
+
+    console.print(table)
+
+    console.print(
+        Panel(
+            "Silhouette > 0.5 = reasonable clusters. The Iris dataset has 3 species, "
+            "and KMeans typically discovers them with high accuracy.\n"
+            "Try DBSCAN for non-spherical cluster shapes.",
+            title="Interpreting results",
+            border_style="green",
+        )
+    )
 
 
 # ── Interactive Calculator ──────────────────────────────────────────────
@@ -528,51 +832,124 @@ def _interactive_calc() -> None:
 
 
 def _show_benchmarks() -> None:
-    """Display benchmark questions in a Rich table."""
+    """Display and optionally run benchmark questions."""
     from agentexplorr.agents.evaluation.benchmarks import (
         get_math_questions,
         get_search_questions,
     )
 
-    console.print()
-    math_qs = get_math_questions()
-    search_qs = get_search_questions()
+    while True:
+        choice = _select(
+            "Benchmarks",
+            [
+                "View all questions",
+                "Run quick benchmark (calculator agent)",
+                BACK,
+            ],
+        )
+        if choice is None or choice == BACK:
+            return
 
-    table = Table(
-        title=f"Agent Benchmark Suite ({len(math_qs) + len(search_qs)} questions)",
-        border_style="cyan",
+        if choice == "View all questions":
+            console.print()
+            math_qs = get_math_questions()
+            search_qs = get_search_questions()
+
+            table = Table(
+                title=f"Agent Benchmark Suite ({len(math_qs) + len(search_qs)} questions)",
+                border_style="cyan",
+            )
+            table.add_column("#", style="dim", width=3)
+            table.add_column("Category", style="bold")
+            table.add_column("Difficulty")
+            table.add_column("Question")
+            table.add_column("Expected Answer", style="green")
+
+            for i, q in enumerate(math_qs, 1):
+                diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(
+                    q.difficulty, "white"
+                )
+                table.add_row(
+                    str(i),
+                    "math",
+                    f"[{diff_color}]{q.difficulty}[/{diff_color}]",
+                    q.question,
+                    q.expected_answer,
+                )
+
+            for i, q in enumerate(search_qs, len(math_qs) + 1):
+                diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(
+                    q.difficulty, "white"
+                )
+                table.add_row(
+                    str(i),
+                    "search",
+                    f"[{diff_color}]{q.difficulty}[/{diff_color}]",
+                    q.question,
+                    q.expected_answer,
+                )
+
+            console.print(table)
+
+        elif choice == "Run quick benchmark (calculator agent)":
+            _run_quick_benchmark()
+
+        _pause()
+
+
+def _run_quick_benchmark() -> None:
+    """Run a quick benchmark using the calculator tool as a fake agent."""
+    from agentexplorr.agents.evaluation.benchmarks import (
+        AgentBenchmark,
+        BenchmarkQuestion,
     )
-    table.add_column("#", style="dim", width=3)
-    table.add_column("Category", style="bold")
-    table.add_column("Difficulty")
-    table.add_column("Question")
-    table.add_column("Expected Answer", style="green")
+    from agentexplorr.agents.tools.calculator import safe_evaluate
 
-    for i, q in enumerate(math_qs, 1):
-        diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(q.difficulty, "white")
-        table.add_row(str(i), "math", f"[{diff_color}]{q.difficulty}[/{diff_color}]",
-                       q.question, q.expected_answer)
+    console.print()
+    console.print("  [bold]Running benchmark with calculator agent...[/bold]\n")
 
-    for i, q in enumerate(search_qs, len(math_qs) + 1):
-        diff_color = {"easy": "green", "medium": "yellow", "hard": "red"}.get(q.difficulty, "white")
-        table.add_row(str(i), "search", f"[{diff_color}]{q.difficulty}[/{diff_color}]",
-                       q.question, q.expected_answer)
+    # Build a simple agent that uses the calculator for math questions
+    @dataclass
+    class _CalcResult:
+        final_answer: str
+        tools_used: list[str]
+
+    class _CalcAgent:
+        """A simple agent that evaluates math expressions directly."""
+
+        def run(self, query: str) -> _CalcResult:
+            # Extract the mathematical expression from the question
+            # For math benchmark questions, try to evaluate directly
+            try:
+                result = safe_evaluate(query)
+                return _CalcResult(final_answer=str(result), tools_used=["calculator"])
+            except Exception:
+                return _CalcResult(final_answer="I don't know", tools_used=[])
+
+    questions = [
+        BenchmarkQuestion("What is 2 + 2?", "4", category="math", match_type="numeric"),
+        BenchmarkQuestion("sqrt(144)", "12", category="math", match_type="numeric"),
+        BenchmarkQuestion("3 * 7 + 1", "22", category="math", match_type="numeric"),
+        BenchmarkQuestion("2 ** 10", "1024", category="math", match_type="numeric"),
+        BenchmarkQuestion("100 / 4", "25", category="math", match_type="numeric"),
+    ]
+
+    benchmark = AgentBenchmark(verbose=False)
+    summary = benchmark.run(_CalcAgent(), questions)
+
+    table = Table(title="Benchmark Results", border_style="cyan")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", style="green", justify="right")
+
+    table.add_row("Total Questions", str(summary.total_questions))
+    table.add_row("Correct", str(summary.correct))
+    table.add_row("Accuracy", f"{summary.accuracy:.1%}")
+    table.add_row("Errors", str(summary.errors))
 
     console.print(table)
 
-    console.print(
-        Panel(
-            "from agentexplorr.agents import ReActAgent\n"
-            "from agentexplorr.agents.evaluation.benchmarks import AgentBenchmark\n\n"
-            "benchmark = AgentBenchmark()\n"
-            'summary = benchmark.run(ReActAgent(), benchmark.mixed_questions())\n'
-            'print(f"Accuracy: {summary.accuracy:.1%}")',
-            title="Run benchmarks with a real agent",
-            border_style="green",
-        )
-    )
-
-    _pause()
+    if summary.tool_usage:
+        console.print(f"\n  [dim]Tools used: {dict(summary.tool_usage)}[/dim]")
 
 
 # ── Project Info ────────────────────────────────────────────────────────
@@ -629,7 +1006,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="AgentExplorr — AI/ML Playground. Run without arguments for interactive mode.",
     )
     parser.add_argument(
-        "--version", action="version", version=f"agentexplorr {__version__}",
+        "--version",
+        action="version",
+        version=f"agentexplorr {__version__}",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
