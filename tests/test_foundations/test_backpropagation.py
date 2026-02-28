@@ -6,7 +6,6 @@ and PyTorch autograd (when available).
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from agentexplorr.foundations.backpropagation import ComputationalGraph, Node

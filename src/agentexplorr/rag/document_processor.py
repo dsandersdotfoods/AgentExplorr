@@ -262,7 +262,7 @@ class DocumentProcessor:
             try:
                 docs = self.load_file(fp)
                 all_documents.extend(docs)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 # Log and skip problematic files rather than crashing the whole batch
                 logger.warning(
                     "skipping_file",
@@ -296,7 +296,7 @@ class DocumentProcessor:
             "source": str(path),
             "format": _SUPPORTED_EXTENSIONS.get(path.suffix.lower(), "Unknown"),
             "file_size": path.stat().st_size,
-            "created_at": datetime.datetime.now(tz=datetime.timezone.utc).isoformat(),
+            "created_at": datetime.datetime.now(tz=datetime.UTC).isoformat(),
             **extra,
         }
         return metadata

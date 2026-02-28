@@ -7,7 +7,7 @@ Tests verify tool registration, discovery, and calling.
 
 from __future__ import annotations
 
-from agentexplorr.mcp.clients.mcp_client import MCPClientManager, ToolInfo, ToolResult
+from agentexplorr.mcp.clients.mcp_client import MCPClientManager, ToolInfo
 
 
 class TestMCPClientManager:

@@ -529,7 +529,7 @@ class FAISSVectorStore:
 
         # Load metadata first to get dimension and index_type
         with open(metadata_path, "rb") as f:
-            metadata = pickle.load(f)  # noqa: S301
+            metadata = pickle.load(f)
 
         # Create a new instance with the saved config
         store = cls(

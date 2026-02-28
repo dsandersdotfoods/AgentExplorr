@@ -206,7 +206,7 @@ def list_tables(db_path: str | None = None) -> str:
 
         lines = ["Tables in database:"]
         for table in tables:
-            count = conn.execute(f"SELECT COUNT(*) as c FROM [{table}]").fetchone()["c"]  # noqa: S608
+            count = conn.execute(f"SELECT COUNT(*) as c FROM [{table}]").fetchone()["c"]
             lines.append(f"  - {table} ({count:,} rows)")
 
         return "\n".join(lines)

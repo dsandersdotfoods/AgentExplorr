@@ -51,13 +51,6 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
-# --- Pipeline Imports ---
-# These are the classical ML pipelines wrapping sklearn functionality
-# into clean, reusable classes with built-in evaluation.
-from agentexplorr.classical_ml.pipelines.classification import ClassificationPipeline
-from agentexplorr.classical_ml.pipelines.clustering import ClusteringPipeline
-from agentexplorr.classical_ml.pipelines.regression import RegressionPipeline
-
 # --- Deep Learning Imports ---
 # PyTorch-based neural network architectures and training utilities.
 from agentexplorr.classical_ml.deep_learning.cnn import SimpleCNN
@@ -66,6 +59,13 @@ from agentexplorr.classical_ml.deep_learning.transformer import MiniTransformer
 
 # --- Experiment Tracking ---
 from agentexplorr.classical_ml.experiment_tracking import ExperimentTracker
+
+# --- Pipeline Imports ---
+# These are the classical ML pipelines wrapping sklearn functionality
+# into clean, reusable classes with built-in evaluation.
+from agentexplorr.classical_ml.pipelines.classification import ClassificationPipeline
+from agentexplorr.classical_ml.pipelines.clustering import ClusteringPipeline
+from agentexplorr.classical_ml.pipelines.regression import RegressionPipeline
 
 __all__ = [
     # Classical ML Pipelines

@@ -6,7 +6,6 @@ Verifies that each optimizer converges on simple problems.
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from agentexplorr.foundations.optimizers import SGD, Adam, AdamW, Momentum
 

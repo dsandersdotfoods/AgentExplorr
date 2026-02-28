@@ -66,13 +66,14 @@ PAPERS:
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from agentexplorr.core import Settings, get_logger
 from agentexplorr.rag.chunking import BaseChunker, Chunk, RecursiveChunker
-from agentexplorr.rag.document_processor import Document, DocumentProcessor
+from agentexplorr.rag.document_processor import DocumentProcessor
 from agentexplorr.rag.embeddings import EmbeddingModel
 from agentexplorr.rag.retriever import HybridRetriever, RetrievalResult
 from agentexplorr.rag.vector_stores.chroma_store import ChromaVectorStore
@@ -582,6 +583,126 @@ class RAGPipeline:
                 )
             else:
                 return f"[ERROR] Ollama generation failed: {error_msg}"
+
+    # ------------------------------------------------------------------
+    # Streaming generation
+    # ------------------------------------------------------------------
+
+    def query_stream(
+        self,
+        question: str,
+        top_k: int | None = None,
+        prompt_template: str | None = None,
+    ) -> Generator[str, None, RAGResponse]:
+        """Ask a question and stream the answer token-by-token.
+
+        Works identically to ``query()`` but yields answer tokens as they
+        arrive from the LLM, enabling real-time display in chat interfaces.
+
+        The final ``return`` value is a full ``RAGResponse`` (accessible via
+        ``StopIteration.value`` or by wrapping in a helper).
+
+        Usage::
+
+            gen = pipeline.query_stream("What is attention?")
+            try:
+                while True:
+                    token = next(gen)
+                    print(token, end="", flush=True)
+            except StopIteration as e:
+                response = e.value  # Full RAGResponse
+
+        Args:
+            question:         The user's question.
+            top_k:            Number of chunks to retrieve.
+            prompt_template:  Override the default prompt template.
+
+        Yields:
+            Individual text tokens as strings.
+
+        Returns:
+            A complete RAGResponse (via generator return).
+        """
+        import time
+
+        start_time = time.perf_counter()
+        k = top_k or self._top_k
+        template = prompt_template or self._prompt_template
+
+        # Step 1: Retrieve
+        retrieval_start = time.perf_counter()
+        retrieved = self._retriever.search(question, top_k=k)
+        retrieval_time = time.perf_counter() - retrieval_start
+
+        if not retrieved:
+            no_info = "I couldn't find any relevant information in the knowledge base."
+            yield no_info
+            return RAGResponse(
+                answer=no_info,
+                retrieved_chunks=[],
+                query=question,
+                model=self._ollama_model,
+                metadata={"retrieval_time": retrieval_time},
+            )
+
+        # Step 2: Build context and prompt
+        context_parts: list[str] = []
+        for i, chunk in enumerate(retrieved, start=1):
+            source = chunk.metadata.get("source", "unknown")
+            page = chunk.metadata.get("page", "")
+            source_info = f" (page {page})" if page else ""
+            context_parts.append(
+                f"[Source {i}: {source}{source_info}]\n{chunk.text}"
+            )
+        context = "\n\n---\n\n".join(context_parts)
+        prompt = template.format(context=context, question=question)
+
+        # Step 3: Stream from Ollama
+        generation_start = time.perf_counter()
+        collected_tokens: list[str] = []
+
+        try:
+            from langchain_ollama import ChatOllama
+
+            llm = ChatOllama(
+                model=self._ollama_model,
+                base_url=self._ollama_base_url,
+                temperature=0.1,
+            )
+
+            for chunk_msg in llm.stream(prompt):
+                token = chunk_msg.content if hasattr(chunk_msg, "content") else str(chunk_msg)
+                collected_tokens.append(token)
+                yield token
+
+        except ImportError:
+            error = "[ERROR] langchain-ollama is not installed."
+            collected_tokens.append(error)
+            yield error
+        except Exception as exc:
+            error = f"[ERROR] Streaming failed: {exc}"
+            collected_tokens.append(error)
+            yield error
+
+        generation_time = time.perf_counter() - generation_start
+        total_time = time.perf_counter() - start_time
+        answer = "".join(collected_tokens)
+
+        return RAGResponse(
+            answer=answer,
+            retrieved_chunks=retrieved,
+            query=question,
+            prompt=prompt,
+            model=self._ollama_model,
+            metadata={
+                "retrieval_time": retrieval_time,
+                "generation_time": generation_time,
+                "total_time": total_time,
+                "top_k": k,
+                "chunks_retrieved": len(retrieved),
+                "streamed": True,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Utility methods

@@ -158,6 +158,10 @@ all = [
     "agentexplorr[agents,mcp,training,ml,rag,prompts,notebooks]",
 ]
 
+# CLI entry point — install with `uv sync` then run `agentexplorr`
+[project.scripts]
+agentexplorr = "agentexplorr.cli:main"
+
 # ---------------------------------------------------------------------------
 # Development dependencies — linting, testing, type-checking
 # ---------------------------------------------------------------------------

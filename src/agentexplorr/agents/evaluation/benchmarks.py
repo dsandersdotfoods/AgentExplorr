@@ -48,12 +48,13 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
-import time
-from dataclasses import dataclass, field
-from difflib import SequenceMatcher
-from typing import Any, Callable, Protocol, runtime_checkable
 import re
 import statistics
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from difflib import SequenceMatcher
+from typing import Any, Protocol, runtime_checkable
 
 from agentexplorr.core import get_logger
 
@@ -737,13 +738,13 @@ class AgentBenchmark:
         """
         # ReActResult has .tools_used (list of strings)
         if hasattr(result, "tools_used"):
-            tools = getattr(result, "tools_used")
+            tools = result.tools_used
             if isinstance(tools, list):
                 return [str(t) for t in tools]
 
         # ToolAgentResult has .tools_called (list of dicts)
         if hasattr(result, "tools_called"):
-            tools_called = getattr(result, "tools_called")
+            tools_called = result.tools_called
             if isinstance(tools_called, list):
                 return [
                     tc["name"] if isinstance(tc, dict) else str(tc)
@@ -872,12 +873,12 @@ class AgentBenchmark:
         print(f"  Total time:       {summary.total_time:.1f}s")
 
         if summary.tool_usage:
-            print(f"\n  Tool usage:")
+            print("\n  Tool usage:")
             for tool_name, count in sorted(summary.tool_usage.items()):
                 print(f"    {tool_name}: {count} calls")
 
         if summary.per_category:
-            print(f"\n  Per-category accuracy:")
+            print("\n  Per-category accuracy:")
             for cat, stats in sorted(summary.per_category.items()):
                 print(
                     f"    {cat}: {stats['accuracy']:.1%} "

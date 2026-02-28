@@ -283,7 +283,7 @@ class HybridRetriever:
                     store=store_name,
                     results=len(store_results),
                 )
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 # Don't let one failing store break the entire search
                 logger.error(
                     "store_search_failed",

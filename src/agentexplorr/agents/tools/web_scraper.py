@@ -43,7 +43,6 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
-from typing import Any
 from urllib.parse import urlparse
 
 from langchain_core.tools import tool

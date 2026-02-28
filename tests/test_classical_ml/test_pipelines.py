@@ -9,8 +9,8 @@ All tests run fast (<1s) using small datasets.
 from __future__ import annotations
 
 from agentexplorr.classical_ml.pipelines.classification import ClassificationPipeline
-from agentexplorr.classical_ml.pipelines.regression import RegressionPipeline
 from agentexplorr.classical_ml.pipelines.clustering import ClusteringPipeline
+from agentexplorr.classical_ml.pipelines.regression import RegressionPipeline
 
 
 class TestClassificationPipeline:

@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 from agentexplorr.foundations.activations import (
-    ActivationFunction,
     gelu,
     leaky_relu,
     relu,

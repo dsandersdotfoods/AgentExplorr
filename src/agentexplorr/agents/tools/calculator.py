@@ -49,7 +49,7 @@ from __future__ import annotations
 import ast
 import math
 import operator
-from typing import Any, Union
+from typing import Any
 
 from langchain_core.tools import tool
 
@@ -137,7 +137,7 @@ class SafeExpressionError(Exception):
     pass
 
 
-def _safe_eval_node(node: ast.AST) -> Union[int, float, bool, list[Any]]:
+def _safe_eval_node(node: ast.AST) -> int | float | bool | list[Any]:
     """Recursively evaluate an AST node, allowing only safe operations.
 
     This is a recursive descent evaluator that walks the AST tree.
@@ -299,7 +299,7 @@ def _safe_eval_node(node: ast.AST) -> Union[int, float, bool, list[Any]]:
     )
 
 
-def safe_evaluate(expression: str) -> Union[int, float, bool]:
+def safe_evaluate(expression: str) -> int | float | bool:
     """Parse and safely evaluate a mathematical expression.
 
     This is the main entry point for the safe evaluator. It:
@@ -413,7 +413,7 @@ def calculator(expression: str) -> str:
 # Convenience function for direct use (outside agent context)
 # ---------------------------------------------------------------------------
 
-def calculate(expression: str) -> Union[int, float, bool]:
+def calculate(expression: str) -> int | float | bool:
     """Public API for evaluating math expressions outside of an agent context.
 
     Unlike the ``calculator`` tool (which returns strings for LLM consumption),

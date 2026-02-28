@@ -214,7 +214,7 @@ class CodeExecutor:
                 # compile() converts source code to a code object
                 # exec() runs the code object in the restricted namespace
                 compiled = compile(code, "<sandbox>", "exec")
-                exec(compiled, restricted_globals)  # noqa: S102
+                exec(compiled, restricted_globals)
 
             result.stdout = stdout_capture.getvalue()[: self.max_output_chars]
             result.stderr = stderr_capture.getvalue()[: self.max_output_chars]

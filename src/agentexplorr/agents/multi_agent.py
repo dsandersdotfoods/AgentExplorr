@@ -84,9 +84,9 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
-import json
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Annotated, Literal, Sequence, TypedDict
+from typing import Annotated, Any, TypedDict
 
 from langchain_core.messages import (
     AIMessage,

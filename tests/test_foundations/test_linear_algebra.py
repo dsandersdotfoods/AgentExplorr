@@ -8,10 +8,6 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from agentexplorr.foundations.linear_algebra_essentials import (
-    LinearAlgebraTeacher,
-)
-
 
 class TestLinearAlgebraTeacher:
     """Tests for the LinearAlgebraTeacher utility class."""

@@ -54,8 +54,10 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Annotated, Literal, Sequence, TypedDict
+from datetime import UTC
+from typing import Annotated, Any, Literal, TypedDict
 
 from langchain_core.messages import (
     AIMessage,
@@ -94,9 +96,9 @@ def get_current_time() -> str:
     Returns:
         Current date and time as a formatted string.
     """
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return now.strftime("%Y-%m-%d %H:%M:%S UTC")
 
 

@@ -39,6 +39,6 @@ from agentexplorr.classical_ml.pipelines.regression import RegressionPipeline
 
 __all__ = [
     "ClassificationPipeline",
-    "RegressionPipeline",
     "ClusteringPipeline",
+    "RegressionPipeline",
 ]

@@ -46,7 +46,7 @@ from agentexplorr.classical_ml.deep_learning.training_loop import Trainer
 from agentexplorr.classical_ml.deep_learning.transformer import MiniTransformer
 
 __all__ = [
-    "SimpleCNN",
     "MiniTransformer",
+    "SimpleCNN",
     "Trainer",
 ]

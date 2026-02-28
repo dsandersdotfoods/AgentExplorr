@@ -91,7 +91,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 import torch
@@ -153,7 +152,7 @@ class EvaluationResult:
 
         # Perplexity
         if self.perplexity is not None:
-            lines.append(f"\n--- Perplexity ---")
+            lines.append("\n--- Perplexity ---")
             lines.append(f"  Perplexity: {self.perplexity:.2f}")
             # Add an interpretive guide
             if self.perplexity < 15:
@@ -167,13 +166,13 @@ class EvaluationResult:
 
         # BLEU Scores
         if self.bleu_scores:
-            lines.append(f"\n--- BLEU Scores ---")
+            lines.append("\n--- BLEU Scores ---")
             for key, value in self.bleu_scores.items():
                 lines.append(f"  {key}: {value:.4f}")
 
         # ROUGE Scores
         if self.rouge_scores:
-            lines.append(f"\n--- ROUGE Scores ---")
+            lines.append("\n--- ROUGE Scores ---")
             for key, value in self.rouge_scores.items():
                 lines.append(f"  {key}: {value:.4f}")
 
@@ -936,14 +935,14 @@ class ModelEvaluator:
             )
             # For perplexity, LOWER is better, so negative change is good
             direction = "improved" if ppl_change < 0 else "worsened"
-            lines.append(f"\n--- Perplexity (lower is better) ---")
+            lines.append("\n--- Perplexity (lower is better) ---")
             lines.append(f"  Base:       {base_result.perplexity:.2f}")
             lines.append(f"  Fine-tuned: {finetuned_result.perplexity:.2f}")
             lines.append(f"  Change:     {ppl_change:+.1f}% ({direction})")
 
         # BLEU comparison
         if base_result.bleu_scores and finetuned_result.bleu_scores:
-            lines.append(f"\n--- BLEU Score (higher is better) ---")
+            lines.append("\n--- BLEU Score (higher is better) ---")
             for key in ["bleu", "bleu_1", "bleu_4"]:
                 if key in base_result.bleu_scores and key in finetuned_result.bleu_scores:
                     base_val = base_result.bleu_scores[key]
@@ -959,7 +958,7 @@ class ModelEvaluator:
 
         # ROUGE comparison
         if base_result.rouge_scores and finetuned_result.rouge_scores:
-            lines.append(f"\n--- ROUGE Score (higher is better) ---")
+            lines.append("\n--- ROUGE Score (higher is better) ---")
             for key in ["rouge1", "rouge2", "rougeL"]:
                 if key in base_result.rouge_scores and key in finetuned_result.rouge_scores:
                     base_val = base_result.rouge_scores[key]

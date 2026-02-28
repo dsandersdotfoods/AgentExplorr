@@ -86,15 +86,19 @@ LEARNING RESOURCES:
 
 from __future__ import annotations
 
+from agentexplorr.agents.memory import ConversationMemory, Message
+from agentexplorr.agents.multi_agent import MultiAgentResult, MultiAgentSupervisor
 from agentexplorr.agents.react_agent import ReActAgent, ReActResult
 from agentexplorr.agents.tool_agent import ToolAgent, ToolAgentResult
-from agentexplorr.agents.multi_agent import MultiAgentSupervisor, MultiAgentResult
 
 __all__ = [
     # Agent classes
     "ReActAgent",
     "ToolAgent",
     "MultiAgentSupervisor",
+    # Memory
+    "ConversationMemory",
+    "Message",
     # Result classes
     "ReActResult",
     "ToolAgentResult",

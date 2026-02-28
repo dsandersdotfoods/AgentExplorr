@@ -62,9 +62,9 @@ from __future__ import annotations
 
 # Import tool functions so they can be accessed as:
 #   from agentexplorr.agents.tools import web_search, calculator, web_scrape
-from agentexplorr.agents.tools.calculator import calculator, calculate
-from agentexplorr.agents.tools.search import web_search, web_search_detailed, search
-from agentexplorr.agents.tools.web_scraper import web_scrape, scrape_url
+from agentexplorr.agents.tools.calculator import calculate, calculator
+from agentexplorr.agents.tools.search import search, web_search, web_search_detailed
+from agentexplorr.agents.tools.web_scraper import scrape_url, web_scrape
 
 __all__ = [
     # LangChain @tool decorated functions (for agents)

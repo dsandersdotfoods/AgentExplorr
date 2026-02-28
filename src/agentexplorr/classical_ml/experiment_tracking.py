@@ -71,9 +71,10 @@ from __future__ import annotations
 
 import json
 import tempfile
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 from agentexplorr.core.config import get_settings
 from agentexplorr.core.logging import get_logger
